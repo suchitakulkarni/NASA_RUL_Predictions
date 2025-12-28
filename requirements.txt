@@ -1,0 +1,20 @@
+streamlit
+pandas
+numpy 
+plotly
+
+# Core scientific stack
+numpy>=1.22
+pandas>=1.4
+scikit-learn>=1.1
+matplotlib>=3.5
+
+# Machine learning
+xgboost>=1.6
+
+# Hyperparameter optimization
+optuna>=3.0
+
+# Jupyter (for notebooks)
+jupyterlab>=3.4
+notebook>=6.4
