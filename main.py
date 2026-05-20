@@ -1,46 +1,53 @@
-import pandas as pd
-import os
+# main.py
+import logging
 import numpy as np
-import optuna
-from sklearn.preprocessing import StandardScaler
-# We are going to compare two different regression models here
-from xgboost import XGBRegressor
-from optuna.integration import XGBoostPruningCallback
-from sklearn.model_selection import GridSearchCV,RandomizedSearchCV
-from sklearn.metrics import mean_absolute_error
-from sklearn.model_selection import train_test_split
-import optuna
-import xgboost as xgb
-from sklearn.metrics import mean_absolute_error
-import matplotlib.pyplot as plt
-from src.model import *
-from src.data import *
-from src.evaluate import *
-from src.utils import *
 
-def run_pipeline():
+from src.utils import setup_logging, RESULTS_DIR
+from src.data import load_datasets, normalize_data
+from src.model import split_train_test, create_sliding_window, run_all_quantile_models, predict
+from src.evaluate import write_results_to_csv, plot_results
 
-    data_train, data_test, feature_cols = load_datasets()
-    normalised_data_train_df, normalised_data_test_df = normalize_data(data_train, data_test, feature_cols)
+logger = logging.getLogger(__name__)
 
-    split_data_train_df, split_data_valid_df = split_train_test(normalised_data_train_df)
 
-    x_train, y_train, uid_train = create_sliding_window(split_data_train_df, feature_cols)
-    x_valid, y_valid, uid_valid = create_sliding_window(split_data_valid_df, feature_cols)
-    x_test, y_test, uid_test = create_sliding_window(normalised_data_test_df, feature_cols)
+def run_pipeline(dataset_id = 'FD001'):
+    logger.info("Pipeline started")
 
-    # Flatten
+    # --- Data loading and preprocessing ---
+    data_train, data_valid, RUL_labels, feature_cols = load_datasets(dataset_id=dataset_id)
+    data_train, data_valid, scaler = normalize_data(data_train, data_valid, feature_cols)
+
+    # --- Train/test split ---
+    split_train_df, split_test_df = split_train_test(data_train)
+
+    # --- Sliding windows ---
+    x_train, y_train, uid_train = create_sliding_window(split_train_df, feature_cols)
+    x_test, y_test, uid_test = create_sliding_window(split_test_df, feature_cols)
+    x_valid,  y_valid,  uid_valid  = create_sliding_window(data_valid, feature_cols)
+
+    # --- Flatten for XGBoost ---
     X_train = x_train.reshape(x_train.shape[0], -1)
-    X_valid = x_valid.reshape(x_valid.shape[0], -1)
     X_test = x_test.reshape(x_test.shape[0], -1)
+    X_valid  = x_valid.reshape(x_valid.shape[0], -1)
 
-    models = run_all_quantile_models(X_train, y_train, X_valid, y_valid, X_test, quantiles=None)
+    logger.info("Flattened shapes -- X_train: %s, X_test: %s, X_valid: %s",
+                X_train.shape, X_test.shape, X_valid.shape)
 
-    predictions = predict(X_train, y_train, X_test, models, quantiles=None)
-    df_preds = write_results_to_csv(uid_test, predictions)
+    # --- Optimisation ---
+    quantiles = [0.05, 0.5, 0.95]
+    models = run_all_quantile_models(X_train, y_train, X_test, y_test, X_valid, quantiles=quantiles, n_jobs = 4, model_dir = f"./saved_models_{dataset_id}")
 
-    fig = plot_results(df_preds)
-    fig.savefig('final_predictions.png')
+    # --- Prediction ---
+    ypreds = predict(X_train, y_train, X_valid, model_dir = f"./saved_models_{dataset_id}", quantiles=quantiles)
+
+    # --- Evaluation and output ---
+    df_preds = write_results_to_csv(uid_valid, ypreds, y_valid, quantiles=quantiles)
+    fig = plot_results(df_preds, RUL_labels, title=f"pred_vs_true_{dataset_id}")
+
+    logger.info("Pipeline complete. Results written to %s/", RESULTS_DIR)
+    return df_preds, fig
+
 
 if __name__ == "__main__":
-    run_pipeline()
+    setup_logging(level=logging.INFO)
+    run_pipeline(dataset_id = 'FD001')
