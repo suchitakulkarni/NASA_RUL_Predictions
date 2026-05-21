@@ -1,33 +1,14 @@
-2026-05-21 16:22:09 | INFO     | src.feature_engineering | FeatureEngineer loaded from results/models/feature_engineer.pkl
-2026-05-21 16:22:09 | INFO     | src.condition_normaliser | ConditionNormaliser loaded from results/models/condition_normaliser.pkl
-2026-05-21 16:22:10 | INFO     | src.model | RULModel loaded from results/models/separate_engineered_FD001.pkl
-2026-05-21 16:22:10 | INFO     | src.data | Loaded FD001: train=20631 rows/100 units, test=13096 rows/100 units
-2026-05-21 16:22:10 | WARNING  | src.condition_normaliser | Cluster 0 has no rows in this split — skipping
-2026-05-21 16:22:10 | WARNING  | src.condition_normaliser | Cluster 1 has no rows in this split — skipping
-2026-05-21 16:22:10 | WARNING  | src.condition_normaliser | Cluster 3 has no rows in this split — skipping
-2026-05-21 16:22:10 | WARNING  | src.condition_normaliser | Cluster 4 has no rows in this split — skipping
-2026-05-21 16:22:10 | WARNING  | src.condition_normaliser | Cluster 5 has no rows in this split — skipping
-2026-05-21 16:22:10 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 13096 rows assigned across 1 clusters
-2026-05-21 16:22:11 | INFO     | src.feature_engineering | FeatureEngineer.transform: 13096 rows, 127 features (14 sensors + 112 rolling + 1 extra)
-2026-05-21 16:22:11 | INFO     | __main__ | FD001 RMSE: 16.3982
-2026-05-21 16:22:11 | INFO     | src.model | RULModel loaded from results/models/separate_engineered_FD002.pkl
-2026-05-21 16:22:11 | INFO     | src.data | Loaded FD002: train=53759 rows/260 units, test=33991 rows/259 units
-2026-05-21 16:22:11 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 33991 rows assigned across 6 clusters
-2026-05-21 16:22:15 | INFO     | src.feature_engineering | FeatureEngineer.transform: 33991 rows, 127 features (14 sensors + 112 rolling + 1 extra)
-2026-05-21 16:22:15 | INFO     | __main__ | FD002 RMSE: 15.2074
-2026-05-21 16:22:15 | INFO     | src.model | RULModel loaded from results/models/separate_engineered_FD003.pkl
-2026-05-21 16:22:15 | INFO     | src.data | Loaded FD003: train=24720 rows/100 units, test=16596 rows/100 units
-2026-05-21 16:22:16 | WARNING  | src.condition_normaliser | Cluster 0 has no rows in this split — skipping
-2026-05-21 16:22:16 | WARNING  | src.condition_normaliser | Cluster 1 has no rows in this split — skipping
-2026-05-21 16:22:16 | WARNING  | src.condition_normaliser | Cluster 3 has no rows in this split — skipping
-2026-05-21 16:22:16 | WARNING  | src.condition_normaliser | Cluster 4 has no rows in this split — skipping
-2026-05-21 16:22:16 | WARNING  | src.condition_normaliser | Cluster 5 has no rows in this split — skipping
-2026-05-21 16:22:16 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 16596 rows assigned across 1 clusters
-2026-05-21 16:22:17 | INFO     | src.feature_engineering | FeatureEngineer.transform: 16596 rows, 127 features (14 sensors + 112 rolling + 1 extra)
-2026-05-21 16:22:17 | INFO     | __main__ | FD003 RMSE: 16.1835
-2026-05-21 16:22:17 | INFO     | src.model | RULModel loaded from results/models/separate_engineered_FD004.pkl
-2026-05-21 16:22:17 | INFO     | src.data | Loaded FD004: train=61249 rows/249 units, test=41214 rows/248 units
-2026-05-21 16:22:17 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 41214 rows assigned across 6 clusters
-2026-05-21 16:22:21 | INFO     | src.feature_engineering | FeatureEngineer.transform: 41214 rows, 127 features (14 sensors + 112 rolling + 1 extra)
-2026-05-21 16:22:21 | INFO     | __main__ | FD004 RMSE: 16.3366
-2026-05-21 16:22:21 | INFO     | src.evaluate | Plot saved to results/pred_vs_true_separate_engineered.png
+2026-05-21 16:24:45 | INFO     | src.feature_engineering | FeatureEngineer loaded from results/models/feature_engineer.pkl
+2026-05-21 16:24:45 | INFO     | src.model | RULModel loaded from results/models/separate_raw_FD001.pkl
+2026-05-21 16:24:45 | INFO     | src.data | Loaded FD001: train=20631 rows/100 units, test=13096 rows/100 units
+2026-05-21 16:24:45 | INFO     | __main__ | FD001 RMSE: 17.8469
+2026-05-21 16:24:45 | INFO     | src.model | RULModel loaded from results/models/separate_raw_FD002.pkl
+2026-05-21 16:24:46 | INFO     | src.data | Loaded FD002: train=53759 rows/260 units, test=33991 rows/259 units
+2026-05-21 16:24:46 | INFO     | __main__ | FD002 RMSE: 17.0568
+2026-05-21 16:24:46 | INFO     | src.model | RULModel loaded from results/models/separate_raw_FD003.pkl
+2026-05-21 16:24:46 | INFO     | src.data | Loaded FD003: train=24720 rows/100 units, test=16596 rows/100 units
+2026-05-21 16:24:46 | INFO     | __main__ | FD003 RMSE: 19.3549
+2026-05-21 16:24:46 | INFO     | src.model | RULModel loaded from results/models/separate_raw_FD004.pkl
+2026-05-21 16:24:46 | INFO     | src.data | Loaded FD004: train=61249 rows/249 units, test=41214 rows/248 units
+2026-05-21 16:24:46 | INFO     | __main__ | FD004 RMSE: 18.2213
+2026-05-21 16:24:46 | INFO     | src.evaluate | Plot saved to results/pred_vs_true_separate_raw.png
