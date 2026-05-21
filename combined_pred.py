@@ -17,12 +17,13 @@ import os
 import numpy as np
 from sklearn.metrics import mean_squared_error
 
-from src.utils import setup_logging
+from src.utils import setup_logging, RESULTS_DIR
 from src.config import Config
 from src.data import load_raw
 from src.condition_normaliser import ConditionNormaliser
 from src.feature_engineering import FeatureEngineer
 from src.model import RULModel
+from src.evaluate import plot_pred_vs_true
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,7 @@ def main():
 
     all_y_true, all_y_pred = [], []
     results = {}
+    dataset_results = {}
 
     for ds in cfg.data.datasets:
         model_path = os.path.join(cfg.paths.models_dir, f"separate_{args.features}_{ds}.pkl")
@@ -98,6 +100,7 @@ def main():
 
         y_true, y_pred, rmse = _predict_rmse(model, eng_test, rul_labels, feat_cols, cfg.data.rul_cap)
         results[ds] = rmse
+        dataset_results[ds] = {"y_true": y_true, "y_pred": y_pred, "rmse": rmse}
         all_y_true.append(y_true)
         all_y_pred.append(y_pred)
         logger.info("%s RMSE: %.4f", ds, rmse)
@@ -116,6 +119,10 @@ def main():
     print(f"  {'-'*22}")
     print(f"  {'Overall':<10} {overall:>10.4f}")
     print(f"{'='*45}\n")
+
+    plot_title = f"pred_vs_true_separate_{args.features}"
+    plot_path = plot_pred_vs_true(dataset_results, title=plot_title, save_dir=RESULTS_DIR)
+    print(f"  Plot saved to {plot_path}\n")
 
 
 if __name__ == "__main__":

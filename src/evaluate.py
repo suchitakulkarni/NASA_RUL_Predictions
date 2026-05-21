@@ -97,3 +97,47 @@ def plot_results(df_preds, RUL_labels, title="pred_vs_true"):
     logger.info("Plot saved to %s", plot_path)
 
     return fig
+
+
+def plot_pred_vs_true(dataset_results, title="pred_vs_true_combined", save_dir=None):
+    """
+    Scatter plot of true vs predicted RUL for point-prediction models, one
+    series per dataset.
+
+    Parameters
+    ----------
+    dataset_results : dict {dataset_name: {"y_true": ndarray, "y_pred": ndarray, "rmse": float}}
+    title           : filename stem for the saved plot
+    save_dir        : output directory; defaults to RESULTS_DIR
+    """
+    if save_dir is None:
+        save_dir = RESULTS_DIR
+
+    colors = ["#4C72B0", "#DD8452", "#55A868", "#C44E52"]
+
+    fig, ax = plt.subplots(figsize=(8, 7))
+    all_vals = []
+
+    for (ds_name, data), color in zip(dataset_results.items(), colors):
+        y_true = data["y_true"]
+        y_pred = data["y_pred"]
+        all_vals.extend(y_true.tolist())
+        all_vals.extend(y_pred.tolist())
+        ax.scatter(y_true, y_pred, alpha=0.5, s=20, color=color,
+                   label=f"{ds_name}  RMSE={data['rmse']:.1f}")
+
+    lim = max(all_vals) * 1.05
+    ax.plot([0, lim], [0, lim], "k--", linewidth=1.5, label="Perfect prediction")
+    ax.set_xlim(0, lim)
+    ax.set_ylim(0, lim)
+    ax.set_xlabel("True RUL")
+    ax.set_ylabel("Predicted RUL")
+    ax.set_title("Predicted vs True RUL — Separate Models")
+    ax.legend(fontsize=9)
+
+    os.makedirs(save_dir, exist_ok=True)
+    plot_path = os.path.join(save_dir, f"{title}.png")
+    fig.savefig(plot_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    logger.info("Plot saved to %s", plot_path)
+    return plot_path
