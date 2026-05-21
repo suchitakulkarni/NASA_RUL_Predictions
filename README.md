@@ -79,17 +79,16 @@ guarantees on unseen test units.
 ### Predicted vs actual RUL
 
 _Plots will be added after re-running evaluation scripts._
-![Predicted vs Actual RUL](results/pred_vs_true_separate_engineered_FD004.png)
 
 <table>
   <tr>
     <td align="center">
       <img src="results/pred_vs_true_separate_engineered_FD004.png" width="400"><br>
-      Plot 1
+      Results using engineered features 
     </td>
     <td align="center">
       <img src="results/pred_vs_true_separate_raw_FD004.png" width="400"><br>
-      Plot 2
+      Results using raw features
     </td>
   </tr>
 </table>
