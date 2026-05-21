@@ -69,7 +69,8 @@ def _make_features(train_df, test_df, ds_id, normaliser, fe, mode, features):
 
     X_train = eng_train[feat_cols].values
     y_train = eng_train["RUL"].values
-    return X_train, y_train, eng_test, feat_cols
+    unit_ids = eng_train["unit_no"].values
+    return X_train, y_train, unit_ids, eng_test, feat_cols
 
 
 def main():
@@ -87,6 +88,13 @@ def main():
                         help="Override model.optuna_trials in config")
     parser.add_argument("--window",  type=int, nargs="+", default=None,
                         help="Override features.window_sizes in config")
+    parser.add_argument("--n-jobs",  type=int, default=1,
+                        help="XGBoost threads per model; set to 1 when running "
+                             "multiple train.py instances in parallel (default: 1)")
+    parser.add_argument("--run-tag", type=str, default=None,
+                        help="Optional suffix for all saved artifact filenames, "
+                             "e.g. 'exp1'. Defaults to '{mode}_{features}'. "
+                             "Use distinct tags when running parallel experiments.")
     args = parser.parse_args()
 
     cfg = Config.from_yaml(args.config)
@@ -102,10 +110,11 @@ def main():
     setup_logging()
     os.makedirs(cfg.paths.models_dir, exist_ok=True)
 
+    artifact_tag = args.run_tag if args.run_tag else f"{args.mode}_{args.features}"
     logger.info(
-        "Training: mode=%s, features=%s, trials=%d, cap=%d, windows=%s",
+        "Training: mode=%s, features=%s, trials=%d, cap=%d, windows=%s, artifact_tag=%s",
         args.mode, args.features, cfg.model.optuna_trials,
-        cfg.data.rul_cap, cfg.features.window_sizes,
+        cfg.data.rul_cap, cfg.features.window_sizes, artifact_tag,
     )
     logger.info("Full config: %s", cfg.to_flat_dict())
 
@@ -134,56 +143,63 @@ def main():
     )
     fe.fit(all_train)
 
-    fe.save(os.path.join(cfg.paths.models_dir, "feature_engineer.pkl"))
-    if args.features == "engineered":
-        normaliser.save(os.path.join(cfg.paths.models_dir, "condition_normaliser.pkl"))
+    fe.save(os.path.join(cfg.paths.models_dir, f"feature_engineer_{artifact_tag}.pkl"))
+    normaliser.save(os.path.join(cfg.paths.models_dir, f"condition_normaliser_{artifact_tag}.pkl"))
 
     if args.mode == "joint":
-        _train_joint(dataset_map, normaliser, fe, cfg, args)
+        _train_joint(dataset_map, normaliser, fe, cfg, args, artifact_tag)
     else:
-        _train_separate(dataset_map, normaliser, fe, cfg, args)
+        _train_separate(dataset_map, normaliser, fe, cfg, args, artifact_tag)
 
 
-def _train_joint(dataset_map, normaliser, fe, cfg, args):
-    X_parts, y_parts, strat_parts, test_data = [], [], [], {}
+def _train_joint(dataset_map, normaliser, fe, cfg, args, artifact_tag):
+    X_parts, y_parts, strat_parts, uid_parts, test_data = [], [], [], [], {}
 
     for i, ds in enumerate(cfg.data.datasets, start=1):
         train_df, test_df, rul_labels = dataset_map[ds]
-        X_train, y_train, eng_test, feat_cols = _make_features(
+        X_train, y_train, unit_ids, eng_test, feat_cols = _make_features(
             train_df, test_df, i, normaliser, fe, "joint", args.features
         )
         X_parts.append(X_train)
         y_parts.append(y_train)
+        uid_parts.append(unit_ids)
         strat_parts.append(np.full(len(X_train), i, dtype=int))
         test_data[ds] = (eng_test, rul_labels, feat_cols)
 
     X_all = np.concatenate(X_parts)
     y_all = np.concatenate(y_parts)
+    uid_all = np.concatenate(uid_parts)
     strat = np.concatenate(strat_parts)
 
     logger.info("Joint training matrix: X=%s y=%s", X_all.shape, y_all.shape)
 
     model = RULModel()
-    model.train(X_all, y_all, cfg=cfg.model, stratify=strat, feat_cols=feat_cols)
-    model.save(os.path.join(cfg.paths.models_dir, f"joint_{args.features}_model.pkl"))
+    model.train(
+        X_all, y_all, cfg=cfg.model, stratify=strat,
+        feat_cols=feat_cols, groups=uid_all, n_jobs=args.n_jobs,
+    )
+    model.save(os.path.join(cfg.paths.models_dir, f"{artifact_tag}_model.pkl"))
 
     for ds, (eng_test, rul_labels, feat_cols) in test_data.items():
         rmse = _test_rmse(model, eng_test, rul_labels, feat_cols, cfg.data.rul_cap)
         logger.info("Joint %s model RMSE on %s: %.4f", args.features, ds, rmse)
 
 
-def _train_separate(dataset_map, normaliser, fe, cfg, args):
+def _train_separate(dataset_map, normaliser, fe, cfg, args, artifact_tag):
     for i, ds in enumerate(cfg.data.datasets, start=1):
         train_df, test_df, rul_labels = dataset_map[ds]
-        X_train, y_train, eng_test, feat_cols = _make_features(
+        X_train, y_train, unit_ids, eng_test, feat_cols = _make_features(
             train_df, test_df, i, normaliser, fe, "separate", args.features
         )
 
         logger.info("Separate %s model for %s: X=%s", args.features, ds, X_train.shape)
 
         model = RULModel()
-        model.train(X_train, y_train, cfg=cfg.model, feat_cols=feat_cols)
-        model.save(os.path.join(cfg.paths.models_dir, f"separate_{args.features}_{ds}.pkl"))
+        model.train(
+            X_train, y_train, cfg=cfg.model,
+            feat_cols=feat_cols, groups=unit_ids, n_jobs=args.n_jobs,
+        )
+        model.save(os.path.join(cfg.paths.models_dir, f"{artifact_tag}_{ds}.pkl"))
 
         rmse = _test_rmse(model, eng_test, rul_labels, feat_cols, cfg.data.rul_cap)
         logger.info("Separate %s model RMSE on %s: %.4f", args.features, ds, rmse)

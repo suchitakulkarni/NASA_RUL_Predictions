@@ -15,10 +15,13 @@ def run_pipeline(dataset_id = 'FD001'):
 
     # --- Data loading and preprocessing ---
     data_train, data_valid, RUL_labels, feature_cols = load_datasets(dataset_id=dataset_id)
-    data_train, data_valid, scaler = normalize_data(data_train, data_valid, feature_cols)
 
-    # --- Train/test split ---
+    # Split by unit ID first so the scaler is fit only on training units.
+    # Fitting on all data before splitting leaks test-unit statistics into the scaler.
     split_train_df, split_test_df = split_train_test(data_train)
+    split_train_df, split_test_df, scaler = normalize_data(split_train_df, split_test_df, feature_cols)
+    data_valid = data_valid.copy()
+    data_valid[feature_cols] = scaler.transform(data_valid[feature_cols])
 
     # --- Sliding windows ---
     x_train, y_train, uid_train = create_sliding_window(split_train_df, feature_cols)

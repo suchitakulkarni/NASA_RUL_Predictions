@@ -34,7 +34,7 @@ Two feature pipelines are implemented and compared:
 - Same 14 sensors, condition-normalised via KMeans clustering on operational settings
   (6 clusters fitted on all training data)
 - Rolling mean and rolling standard deviation per sensor per window size, giving
-  14 sensors x number of windows x 2 statistics additional features
+  14 sensors × number of windows × 2 statistics additional features
 - `cycle_norm`: current cycle divided by the global max training cycle, normalised to [0, 1];
   a monotone decreasing constraint is enforced on this feature so that predicted RUL cannot
   rise as an engine ages
@@ -51,17 +51,27 @@ Two feature pipelines are implemented and compared:
 
 ### Model
 
-XGBoost regressor with hyperparameters tuned via Optuna (minimising RMSE on a 20% stratified
-holdout). Final model is re-trained on the full training set using the best found parameters.
+XGBoost regressor with hyperparameters tuned via Optuna (minimising RMSE on a 20% unit-stratified
+holdout — split is done at the unit level so no unit's time steps appear in both train and val).
+Final model is re-trained on the full training set using the best found parameters.
 RUL targets are capped at 125 cycles (piecewise-linear target).
+
+### Uncertainty quantification
+
+Conformal prediction intervals (90% nominal coverage) are calibrated using split conformal
+with cluster-stratified nonconformity quantiles. Calibration units are held out from the
+temporary model used to compute nonconformity scores, ensuring valid marginal coverage
+guarantees on unseen test units.
 
 ## Results
 
 ### Engineered vs raw pipeline comparison (separate models, cap=125, windows=[5, 10, 20, 30])
 
-| Dataset | Raw RMSE | Engineered RMSE |
-|---|---|---|
-| FD001 | _placeholder_ | _placeholder_ |
+| Dataset | Individual Model | Combined Model |
+|---|------|------|
+|   |Raw features | Engineered features | Raw features | engineered features | 
+|---|---|---|---|
+| FD001 | _ | _placeholder_ |
 | FD002 | _placeholder_ | _placeholder_ |
 | FD003 | _placeholder_ | _placeholder_ |
 | FD004 | _placeholder_ | _placeholder_ |
@@ -84,26 +94,66 @@ All hyperparameters and constants live in `configs/default.yaml`. The CLI flags
 `--cap`, `--trials`, and `--window` override the config for quick experiments
 without editing the file.
 
+### Joint model pipeline (recommended)
+
 ```bash
-# 2. Train all four pipelines
-python train.py --mode joint    --features engineered
-python train.py --mode separate --features engineered
-python train.py --mode joint    --features raw
-python train.py --mode separate --features raw
+# 2. Train — one model on all four datasets
+python train.py --mode joint --features engineered
+python train.py --mode joint --features raw
+
+# 3. Calibrate conformal prediction intervals
+python calibrate.py --features engineered
+python calibrate.py --features raw
+
+# 4. Final evaluation and plots
+python run_evaluation.py --features engineered
+python run_evaluation.py --features raw
 ```
 
-Each run saves its model(s) to `results/models/` using the naming convention
-`{mode}_{features}_{dataset}.pkl`, e.g. `separate_engineered_FD001.pkl`.
-Preprocessing artifacts (`feature_engineer.pkl`, `condition_normaliser.pkl`)
-are also saved there and reused by the evaluation script.
+### Separate model pipeline
 
 ```bash
-# 3. Evaluate combined performance of the separate models
+# 2. Train — one model per dataset
+python train.py --mode separate --features engineered
+python train.py --mode separate --features raw
+
+# 3. Evaluate combined performance across all four datasets
 python combined_pred.py --features engineered
 python combined_pred.py --features raw
 ```
 
-To override a config value from the command line:
+### Artifact naming
+
+Every run saves its artifacts under `results/models/` using an `artifact_tag` that defaults
+to `{mode}_{features}` (e.g. `joint_engineered`). The full naming scheme:
+
+| File | Example |
+|---|---|
+| Model | `joint_engineered_model.pkl` |
+| Feature engineer | `feature_engineer_joint_engineered.pkl` |
+| Condition normaliser | `condition_normaliser_joint_engineered.pkl` |
+| Conformal predictor | `conformal_predictor_joint_engineered.pkl` |
+| Separate model | `separate_engineered_FD001.pkl` |
+
+### Running experiments in parallel
+
+Use `--run-tag` to namespace artifacts and `--n-jobs 1` to avoid CPU oversubscription:
+
+```bash
+# Two experiments side by side, each with their own artifact set
+python train.py --mode joint --features engineered --window 5 10    --run-tag exp_w10  --n-jobs 1 &
+python train.py --mode joint --features engineered --window 5 10 20 --run-tag exp_w20  --n-jobs 1 &
+wait
+
+# Calibrate and evaluate each experiment independently
+python calibrate.py      --features engineered --run-tag exp_w10
+python run_evaluation.py --features engineered --run-tag exp_w10
+
+python calibrate.py      --features engineered --run-tag exp_w20
+python run_evaluation.py --features engineered --run-tag exp_w20
+```
+
+### Overriding config values from the command line
 
 ```bash
 python train.py --mode joint --features engineered --trials 50 --cap 100 --window 5 10
@@ -113,20 +163,28 @@ python train.py --mode joint --features engineered --trials 50 --cap 100 --windo
 
 ```
 .
-+-- train.py               # training entry point (all four pipelines)
-+-- combined_pred.py       # evaluation script for separate models
-+-- configs/
-|   +-- default.yaml       # all hyperparameters and constants
-+-- src/
-|   +-- config.py          # dataclasses that load and validate configs/default.yaml
-|   +-- data.py            # data loading
-|   +-- condition_normaliser.py  # KMeans-based operating condition normalisation
-|   +-- feature_engineering.py  # rolling statistics and cycle normalisation
-|   +-- rul_target.py      # piecewise-linear RUL target computation
-|   +-- model.py           # XGBoost regressor with Optuna tuning
-+-- results/
-|   +-- models/            # saved models and preprocessing artifacts
-+-- CMAPSSData/            # raw dataset (not tracked in git)
+├── train.py               # training entry point (all four pipelines)
+├── calibrate.py           # conformal calibration for a joint model
+├── run_evaluation.py      # final metrics, RUL trajectory plots, feature importance
+├── combined_pred.py       # evaluation script for separate models (with optional conformal uncertainty)
+├── main.py                # legacy quantile-XGBoost pipeline (FD001–FD004 individually)
+├── configs/
+│   └── default.yaml       # all hyperparameters and constants
+├── src/
+│   ├── config.py          # dataclasses that load and validate configs/default.yaml
+│   ├── data.py            # data loading and StandardScaler normalisation (legacy pipeline)
+│   ├── condition_normaliser.py  # KMeans-based operating condition normalisation
+│   ├── feature_engineering.py  # rolling statistics and cycle normalisation
+│   ├── rul_target.py      # piecewise-linear RUL target computation
+│   ├── model.py           # XGBoost regressor with Optuna tuning (RULModel)
+│   ├── conformal.py       # split-conformal predictor with cluster-stratified quantiles
+│   ├── evaluation.py      # RMSE, MAE, CMAPSS score, cost savings
+│   ├── evaluate.py        # CSV writing and quantile-pipeline plot (legacy)
+│   └── visualisation.py   # all matplotlib plots
+├── results/
+│   ├── models/            # saved models and preprocessing artifacts
+│   └── evaluation/        # metrics CSV, RUL plots, coverage plots
+└── CMAPSSData/            # raw dataset (not tracked in git)
 ```
 
 ## Technologies

@@ -14,8 +14,7 @@ Generates:
 Requires that train.py (joint) and calibrate.py have been run first.
 
 Usage:
-    python run_evaluation.py [--cap 125] [--window 5 10] [--n-units 5]
-                             [--lead-time 30]
+    python run_evaluation.py [--cap 125] [--n-units 5] [--lead-time 30]
                              [--cost-unplanned 100000] [--cost-planned 20000]
 """
 import argparse
@@ -30,7 +29,6 @@ from src.utils import setup_logging
 from src.data import load_raw
 from src.condition_normaliser import ConditionNormaliser
 from src.feature_engineering import FeatureEngineer
-from src.rul_target import compute_rul
 from src.model import RULModel
 from src.conformal import ConformalPredictor
 from src.evaluation import compute_metrics, save_metrics_table, cost_savings
@@ -89,7 +87,6 @@ def _build_unit_trajectories(
 def main():
     parser = argparse.ArgumentParser(description="Phase 6: final evaluation and plots")
     parser.add_argument("--cap",            type=int,   default=125)
-    parser.add_argument("--window",         type=int, nargs="+", default=[5, 10])
     parser.add_argument("--n-units",        type=int,   default=5,
                         help="Test units to plot per dataset")
     parser.add_argument("--lead-time",      type=int,   default=30,
@@ -98,6 +95,11 @@ def main():
                         help="Cost of unplanned downtime per unit")
     parser.add_argument("--cost-planned",   type=float, default=20_000.0,
                         help="Cost of scheduled maintenance per unit")
+    parser.add_argument("--features",       choices=["raw", "engineered"], default="engineered",
+                        help="Feature set the joint model was trained with (default: engineered)")
+    parser.add_argument("--run-tag",        type=str, default=None,
+                        help="Artifact tag passed to train.py and calibrate.py; "
+                             "defaults to 'joint_{features}'. Must match training.")
     args = parser.parse_args()
 
     setup_logging()
@@ -106,20 +108,20 @@ def main():
     random.seed(42)
     np.random.seed(42)
 
-    model     = RULModel.load(os.path.join(MODELS_DIR, "joint_model.pkl"))
-    normaliser = ConditionNormaliser.load(os.path.join(MODELS_DIR, "condition_normaliser.pkl"))
-    conformal = ConformalPredictor.load(os.path.join(MODELS_DIR, "conformal_predictor.pkl"))
+    artifact_tag = args.run_tag if args.run_tag else f"joint_{args.features}"
+    logger.info("Loading artifacts with tag=%s", artifact_tag)
 
-    # Rebuild FeatureEngineer with global max_cycle from training data
-    all_train_parts = []
-    for ds in DATASETS:
-        train_df, _, _ = load_raw(DATA_DIR, ds)
-        train_df = compute_rul(train_df, cap=args.cap)
-        all_train_parts.append(train_df)
-    all_train = pd.concat(all_train_parts, ignore_index=True)
+    model      = RULModel.load(os.path.join(MODELS_DIR, f"{artifact_tag}_model.pkl"))
+    normaliser = ConditionNormaliser.load(os.path.join(MODELS_DIR, f"condition_normaliser_{artifact_tag}.pkl"))
+    conformal  = ConformalPredictor.load(os.path.join(MODELS_DIR, f"conformal_predictor_{artifact_tag}.pkl"))
 
-    fe = FeatureEngineer(window_sizes=args.window)
-    fe.fit(all_train)
+    fe_path = os.path.join(MODELS_DIR, f"feature_engineer_{artifact_tag}.pkl")
+    if not os.path.exists(fe_path):
+        raise FileNotFoundError(
+            f"{fe_path} not found — run train.py --mode joint --features {args.features} first."
+        )
+    fe = FeatureEngineer.load(fe_path)
+    logger.info("FeatureEngineer loaded from %s (window_sizes=%s)", fe_path, fe.window_sizes)
 
     metrics_rows = []
     all_lower, all_upper = [], []
@@ -128,16 +130,20 @@ def main():
     for i, ds in enumerate(DATASETS, start=1):
         _, test_df, rul_labels = load_raw(DATA_DIR, ds)
 
-        # Official evaluation: last observed cycle per test unit
-        test_last = test_df.groupby("unit_no").last().reset_index()
+        # Process full test_df so rolling statistics are computed over all cycles,
+        # then take the last observed cycle per unit as the official evaluation point.
+        norm_test = normaliser.transform(test_df)
+        eng_test, feat_cols = fe.transform(norm_test, dataset_id=i)
+        feat_cols_final = feat_cols
+
+        test_last = eng_test.groupby("unit_no").last().reset_index()
         test_last = test_last.merge(rul_labels, on="unit_no")
         y_true = test_last["RUL"].clip(0, args.cap).values
+        X_test = test_last[feat_cols].values
 
-        clusters = normaliser.predict_clusters(test_last)
-        norm_last = normaliser.transform(test_last)
-        eng_last, feat_cols = fe.transform(norm_last, dataset_id=i)
-        feat_cols_final = feat_cols  # same for all datasets in joint mode
-        X_test = eng_last[feat_cols].values
+        # Clusters from raw (pre-normalisation) last row
+        raw_last = test_df.groupby("unit_no").last().reset_index()
+        clusters = normaliser.predict_clusters(raw_last)
 
         y_pred, lower, upper = conformal.predict_with_interval(model, X_test, clusters)
         all_lower.extend(lower.tolist())

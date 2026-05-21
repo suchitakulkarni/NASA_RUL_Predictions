@@ -1,14 +1,28 @@
-2026-05-21 16:24:45 | INFO     | src.feature_engineering | FeatureEngineer loaded from results/models/feature_engineer.pkl
-2026-05-21 16:24:45 | INFO     | src.model | RULModel loaded from results/models/separate_raw_FD001.pkl
-2026-05-21 16:24:45 | INFO     | src.data | Loaded FD001: train=20631 rows/100 units, test=13096 rows/100 units
-2026-05-21 16:24:45 | INFO     | __main__ | FD001 RMSE: 17.8469
-2026-05-21 16:24:45 | INFO     | src.model | RULModel loaded from results/models/separate_raw_FD002.pkl
-2026-05-21 16:24:46 | INFO     | src.data | Loaded FD002: train=53759 rows/260 units, test=33991 rows/259 units
-2026-05-21 16:24:46 | INFO     | __main__ | FD002 RMSE: 17.0568
-2026-05-21 16:24:46 | INFO     | src.model | RULModel loaded from results/models/separate_raw_FD003.pkl
-2026-05-21 16:24:46 | INFO     | src.data | Loaded FD003: train=24720 rows/100 units, test=16596 rows/100 units
-2026-05-21 16:24:46 | INFO     | __main__ | FD003 RMSE: 19.3549
-2026-05-21 16:24:46 | INFO     | src.model | RULModel loaded from results/models/separate_raw_FD004.pkl
-2026-05-21 16:24:46 | INFO     | src.data | Loaded FD004: train=61249 rows/249 units, test=41214 rows/248 units
-2026-05-21 16:24:46 | INFO     | __main__ | FD004 RMSE: 18.2213
-2026-05-21 16:24:46 | INFO     | src.evaluate | Plot saved to results/pred_vs_true_separate_raw.png
+2026-05-21 19:57:35 | INFO     | __main__ | Using artifact_tag=separate_raw
+2026-05-21 19:57:35 | INFO     | src.feature_engineering | FeatureEngineer loaded from results/models/feature_engineer_separate_raw.pkl
+2026-05-21 19:57:35 | INFO     | src.conformal | ConformalPredictor loaded from results/models/conformal_predictor_joint_raw.pkl
+2026-05-21 19:57:35 | INFO     | __main__ | Conformal predictor loaded from results/models/conformal_predictor_joint_raw.pkl — uncertainty will be shown
+2026-05-21 19:57:36 | INFO     | src.model | RULModel loaded from results/models/joint_raw_model.pkl
+2026-05-21 19:57:36 | INFO     | src.feature_engineering | FeatureEngineer loaded from results/models/feature_engineer_joint_raw.pkl
+2026-05-21 19:57:36 | INFO     | __main__ | Joint raw model loaded for per-dataset comparison plots
+2026-05-21 19:57:36 | INFO     | src.model | RULModel loaded from results/models/separate_raw_FD001.pkl
+2026-05-21 19:57:36 | INFO     | src.data | Loaded FD001: train=20631 rows/100 units, test=13096 rows/100 units
+2026-05-21 19:57:36 | INFO     | __main__ | FD001 RMSE: 17.3431
+2026-05-21 19:57:36 | INFO     | src.visualisation | Comparison plot saved to results/pred_vs_true_separate_raw_FD001.png
+2026-05-21 19:57:36 | INFO     | __main__ | FD001 joint RMSE: 15.9539
+2026-05-21 19:57:36 | INFO     | src.model | RULModel loaded from results/models/separate_raw_FD002.pkl
+2026-05-21 19:57:36 | INFO     | src.data | Loaded FD002: train=53759 rows/260 units, test=33991 rows/259 units
+2026-05-21 19:57:36 | INFO     | __main__ | FD002 RMSE: 16.2424
+2026-05-21 19:57:36 | INFO     | src.visualisation | Comparison plot saved to results/pred_vs_true_separate_raw_FD002.png
+2026-05-21 19:57:36 | INFO     | __main__ | FD002 joint RMSE: 15.9365
+2026-05-21 19:57:36 | INFO     | src.model | RULModel loaded from results/models/separate_raw_FD003.pkl
+2026-05-21 19:57:36 | INFO     | src.data | Loaded FD003: train=24720 rows/100 units, test=16596 rows/100 units
+2026-05-21 19:57:36 | INFO     | __main__ | FD003 RMSE: 19.8359
+2026-05-21 19:57:36 | INFO     | src.visualisation | Comparison plot saved to results/pred_vs_true_separate_raw_FD003.png
+2026-05-21 19:57:36 | INFO     | __main__ | FD003 joint RMSE: 19.1753
+2026-05-21 19:57:36 | INFO     | src.model | RULModel loaded from results/models/separate_raw_FD004.pkl
+2026-05-21 19:57:36 | INFO     | src.data | Loaded FD004: train=61249 rows/249 units, test=41214 rows/248 units
+2026-05-21 19:57:36 | INFO     | __main__ | FD004 RMSE: 18.7717
+2026-05-21 19:57:37 | INFO     | src.visualisation | Comparison plot saved to results/pred_vs_true_separate_raw_FD004.png
+2026-05-21 19:57:37 | INFO     | __main__ | FD004 joint RMSE: 18.5084
+2026-05-21 19:57:37 | INFO     | src.visualisation | Plot saved to results/pred_vs_true_separate_raw.png

@@ -6,7 +6,7 @@ import pandas as pd
 import optuna
 import xgboost as xgb
 from xgboost import XGBRegressor
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GroupShuffleSplit
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from src.config import ModelConfig
 
@@ -161,19 +161,23 @@ class RULModel:
         self.best_params = None
         self.val_rmse = None
 
-    def train(self, X, y, cfg: ModelConfig, stratify=None, n_jobs=-1, feat_cols=None):
+    def train(self, X, y, cfg: ModelConfig, stratify=None, n_jobs=-1, feat_cols=None, groups=None):
         """
         Find best hyperparameters via Optuna (cfg.val_split holdout), then fit
         final model on full (X, y).
 
         cfg:       ModelConfig driving trials, val_split, random_state, search bounds.
         stratify:  dataset_id array for joint mode so each dataset is equally
-                   represented in the holdout.
+                   represented in the holdout. Ignored when groups is provided.
         n_jobs:    XGBoost CPU threads; pass 1 when running multiple models in
                    parallel to avoid core oversubscription.
         feat_cols: column names matching X columns; used to enforce a monotone
                    decreasing constraint on cycle_norm (RUL must fall as the
                    engine ages).
+        groups:    unit_no array (one entry per row of X). When provided, the
+                   Optuna validation split is done at the unit level via
+                   GroupShuffleSplit so no unit's rows appear in both train and
+                   val — preventing data leakage in hyperparameter search.
         """
         X = np.asarray(X, dtype=float)
         y = np.asarray(y, dtype=float)
@@ -187,9 +191,23 @@ class RULModel:
                 list(feat_cols).index("cycle_norm"),
             )
 
-        X_tr, X_val, y_tr, y_val = train_test_split(
-            X, y, test_size=cfg.val_split, random_state=cfg.random_state, stratify=stratify
-        )
+        if groups is not None:
+            groups = np.asarray(groups)
+            gss = GroupShuffleSplit(
+                n_splits=1, test_size=cfg.val_split, random_state=cfg.random_state
+            )
+            tr_idx, val_idx = next(gss.split(X, y, groups=groups))
+            X_tr, X_val = X[tr_idx], X[val_idx]
+            y_tr, y_val = y[tr_idx], y[val_idx]
+            logger.info(
+                "Unit-level val split: %d train rows (%d units), %d val rows (%d units)",
+                len(tr_idx), len(np.unique(groups[tr_idx])),
+                len(val_idx), len(np.unique(groups[val_idx])),
+            )
+        else:
+            X_tr, X_val, y_tr, y_val = train_test_split(
+                X, y, test_size=cfg.val_split, random_state=cfg.random_state, stratify=stratify
+            )
         logger.info(
             "Optuna search: train=%d, val=%d, trials=%d, n_jobs=%d",
             len(X_tr), len(X_val), cfg.optuna_trials, n_jobs,
