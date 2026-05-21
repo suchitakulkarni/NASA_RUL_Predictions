@@ -72,6 +72,8 @@ guarantees on unseen test units.
 |   |Raw features | Engineered features | Raw features | engineered features |
 | FD001 | 17.34      | 15.69      | 15.95       | 14.41     |
 | FD002 | 16.24      | 14.96      | 15.94       | 14.17     |
+| FD003 | 19.84      | 15.36      | 19.13       | 14.48     |
+| FD004 | 18.77      | 16.09      | 18.50       | 15.30     |
 
 
 ### Predicted vs actual RUL
