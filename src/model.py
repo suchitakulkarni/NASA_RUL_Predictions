@@ -6,7 +6,7 @@ import pandas as pd
 import optuna
 from xgboost import XGBRegressor
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
@@ -133,6 +133,82 @@ def run_all_quantile_models(X_train, y_train, X_test, y_test, X_valid, quantiles
         logger.info(f"Saved final model (trained on X_train + X_valid) to {model_filename}")
 
     return best_params
+
+
+class RULModel:
+    """XGBoost regressor for RUL estimation with Optuna hyperparameter search."""
+
+    def __init__(self):
+        self.model = None
+        self.best_params = None
+        self.val_rmse = None
+
+    def train(self, X, y, optuna_trials=100, stratify=None, n_jobs=-1):
+        """
+        Find best hyperparameters via Optuna (20% holdout), then fit final
+        model on full (X, y).  Pass stratify=dataset_id_array for the joint
+        model so each dataset is equally represented in the holdout.
+        n_jobs controls XGBoost CPU threads; pass 1 when running multiple
+        models in parallel to avoid core oversubscription.
+        """
+        X = np.asarray(X, dtype=float)
+        y = np.asarray(y, dtype=float)
+
+        X_tr, X_val, y_tr, y_val = train_test_split(
+            X, y, test_size=0.2, random_state=42, stratify=stratify
+        )
+        logger.info(
+            "Optuna search: train=%d, val=%d, trials=%d, n_jobs=%d",
+            len(X_tr), len(X_val), optuna_trials, n_jobs,
+        )
+
+        def objective(trial):
+            params = {
+                "n_estimators":     trial.suggest_int("n_estimators", 50, 500),
+                "max_depth":        trial.suggest_int("max_depth", 3, 10),
+                "learning_rate":    trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+                "subsample":        trial.suggest_float("subsample", 0.5, 1.0),
+                "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
+                "reg_alpha":        trial.suggest_float("reg_alpha", 1e-6, 10.0, log=True),
+                "reg_lambda":       trial.suggest_float("reg_lambda", 1e-6, 10.0, log=True),
+                "verbosity": 0,
+                "random_state": 42,
+                "n_jobs": n_jobs,
+            }
+            m = XGBRegressor(**params)
+            m.fit(X_tr, y_tr, verbose=False)
+            rmse = np.sqrt(mean_squared_error(y_val, m.predict(X_val)))
+            return rmse
+
+        study = optuna.create_study(direction="minimize")
+        study.optimize(objective, n_trials=optuna_trials)
+
+        self.best_params = study.best_params
+        self.val_rmse = study.best_value
+        logger.info("Best val RMSE=%.4f, params=%s", self.val_rmse, self.best_params)
+
+        self.model = XGBRegressor(
+            **self.best_params, verbosity=0, random_state=42, n_jobs=n_jobs
+        )
+        self.model.fit(X, y, verbose=False)
+        logger.info("Final model fitted on %d samples", len(X))
+        return self
+
+    def predict(self, X):
+        if self.model is None:
+            raise RuntimeError("RULModel must be trained before predict")
+        return self.model.predict(np.asarray(X, dtype=float))
+
+    def save(self, path):
+        os.makedirs(os.path.dirname(path) if os.path.dirname(path) else ".", exist_ok=True)
+        joblib.dump(self, path)
+        logger.info("RULModel saved to %s", path)
+
+    @classmethod
+    def load(cls, path):
+        obj = joblib.load(path)
+        logger.info("RULModel loaded from %s", path)
+        return obj
 
 
 def predict(X_train, y_train, X_valid, model_dir = './saved_models', quantiles=None):

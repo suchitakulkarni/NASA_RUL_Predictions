@@ -1,45 +1,13 @@
-2026-05-20 15:38:16 | INFO     | __main__ | Pipeline started
-2026-05-20 15:38:16 | INFO     | src.data | Loading dataset FD001 from ./CMAPSSData
-2026-05-20 15:38:16 | INFO     | src.data | Raw train: 20631 rows, 100 units
-2026-05-20 15:38:16 | INFO     | src.data | Raw test:  13096 rows, 100 units
-2026-05-20 15:38:16 | INFO     | src.data | RUL labels: 100 entries
-2026-05-20 15:38:16 | INFO     | src.data | Train RUL_calc: min=0.0, max=361.0, mean=107.8
-2026-05-20 15:38:16 | INFO     | src.data | Test RUL_calc: min=7.0, max=340.0, mean=141.2
-2026-05-20 15:38:16 | INFO     | src.data | Normalizing 24 feature columns with StandardScaler
-2026-05-20 15:38:16 | INFO     | src.data | Normalization complete
-2026-05-20 15:38:16 | INFO     | src.model | Splitting 100 units into train/test (80/20)
-2026-05-20 15:38:16 | INFO     | src.model | Train set: 80 units, 16561 rows
-2026-05-20 15:38:16 | INFO     | src.model | Test set: 20 units, 4070 rows
-2026-05-20 15:38:16 | INFO     | src.model | Creating sliding windows: window_length=30, features=24
-2026-05-20 15:38:23 | INFO     | src.model | Sliding window complete: X shape=(14161, 30, 24), y shape=(14161,)
-2026-05-20 15:38:23 | INFO     | src.model | RUL range: min=0.0, max=331.0, mean=94.3
-2026-05-20 15:38:23 | INFO     | src.model | Creating sliding windows: window_length=30, features=24
-2026-05-20 15:38:24 | INFO     | src.model | Sliding window complete: X shape=(3470, 30, 24), y shape=(3470,)
-2026-05-20 15:38:24 | INFO     | src.model | RUL range: min=0.0, max=238.0, mean=91.2
-2026-05-20 15:38:24 | INFO     | src.model | Creating sliding windows: window_length=30, features=24
-2026-05-20 15:38:29 | INFO     | src.model | Sliding window complete: X shape=(10096, 30, 24), y shape=(10096,)
-2026-05-20 15:38:29 | INFO     | src.model | RUL range: min=7.0, max=310.0, mean=126.5
-2026-05-20 15:38:29 | INFO     | __main__ | Flattened shapes -- X_train: (14161, 720), X_test: (3470, 720), X_valid: (10096, 720)
-2026-05-20 15:38:29 | INFO     | src.model | Starting quantile optimisation: quantiles=[0.05, 0.5, 0.95], n_trials=50
-2026-05-20 15:38:29 | INFO     | src.model | Train size: 14161, Test size: 3470, Validation size: 10096
-2026-05-20 15:38:29 | INFO     | src.model | Optimising quantile q=0.05
-2026-05-20 15:40:27 | INFO     | src.model | Quantile q=0.05 done: best MAE=33.3565, best params={'n_estimators': 97, 'max_depth': 10, 'learning_rate': 0.28019652706202586, 'subsample': 0.8645685564032995, 'colsample_bytree': 0.6020644891612811}
-2026-05-20 15:40:32 | INFO     | src.model | Saved final model (trained on X_train + X_valid) to ./saved_models_FD001/quantile_0.05_model.pkl
-2026-05-20 15:40:32 | INFO     | src.model | Optimising quantile q=0.50
-2026-05-20 15:43:13 | INFO     | src.model | Quantile q=0.50 done: best MAE=19.0246, best params={'n_estimators': 94, 'max_depth': 8, 'learning_rate': 0.06914622562623625, 'subsample': 0.7627468425146217, 'colsample_bytree': 0.8133883067859183}
-2026-05-20 15:43:19 | INFO     | src.model | Saved final model (trained on X_train + X_valid) to ./saved_models_FD001/quantile_0.50_model.pkl
-2026-05-20 15:43:19 | INFO     | src.model | Optimising quantile q=0.95
-2026-05-20 15:44:34 | INFO     | src.model | Quantile q=0.95 done: best MAE=43.9085, best params={'n_estimators': 56, 'max_depth': 10, 'learning_rate': 0.2495070131256121, 'subsample': 0.5227803245395743, 'colsample_bytree': 0.6829653516753851}
-2026-05-20 15:44:36 | INFO     | src.model | Saved final model (trained on X_train + X_valid) to ./saved_models_FD001/quantile_0.95_model.pkl
-2026-05-20 15:44:36 | INFO     | src.model | Generating predictions for quantiles: [0.05, 0.5, 0.95]
-2026-05-20 15:44:36 | INFO     | src.model | Retraining on full X_train (14161 samples) before predicting
-2026-05-20 15:44:36 | INFO     | src.model | q=0.05 predictions: min=1.8, max=180.0, mean=77.3
-2026-05-20 15:44:36 | INFO     | src.model | q=0.50 predictions: min=4.8, max=208.4, mean=114.1
-2026-05-20 15:44:36 | INFO     | src.model | q=0.95 predictions: min=14.1, max=312.0, mean=177.2
-2026-05-20 15:44:36 | INFO     | src.evaluate | Writing predictions to CSV: 10096 samples, quantiles=[0.05, 0.5, 0.95]
-2026-05-20 15:44:37 | INFO     | src.evaluate | Predictions saved to results/final_results.csv
-2026-05-20 15:44:37 | INFO     | src.evaluate | Plotting prediction vs true RUL for 100 units
-2026-05-20 15:44:37 | INFO     | src.evaluate | True RUL range: min=7.0, max=145.0
-2026-05-20 15:44:37 | INFO     | src.evaluate | Per-unit RUL summary saved to results/RUL_per_unit.csv
-2026-05-20 15:44:37 | INFO     | src.evaluate | Plot saved to results/pred_vs_true_FD001.png
-2026-05-20 15:44:37 | INFO     | __main__ | Pipeline complete. Results written to results/
+2026-05-21 08:50:03 | INFO     | src.data | Loaded FD001: train=20631 rows/100 units, test=13096 rows/100 units
+2026-05-21 08:50:03 | INFO     | src.data | Loaded FD002: train=53759 rows/260 units, test=33991 rows/259 units
+2026-05-21 08:50:04 | INFO     | src.data | Loaded FD003: train=24720 rows/100 units, test=16596 rows/100 units
+2026-05-21 08:50:04 | INFO     | src.data | Loaded FD004: train=61249 rows/249 units, test=41214 rows/248 units
+2026-05-21 08:50:04 | INFO     | src.condition_normaliser | Fitting ConditionNormaliser: n_clusters=6, 160359 rows, 21 sensors
+2026-05-21 08:50:05 | INFO     | src.condition_normaliser | Cluster distribution: {0: 17213, 1: 17141, 2: 62633, 3: 28853, 4: 17320, 5: 17199}
+2026-05-21 08:50:05 | INFO     | src.condition_normaliser | Cluster 0: 17213 rows, sensor mean range [0.022, 8729.498]
+2026-05-21 08:50:05 | INFO     | src.condition_normaliser | Cluster 1: 17141 rows, sensor mean range [0.020, 8014.747]
+2026-05-21 08:50:05 | INFO     | src.condition_normaliser | Cluster 2: 62633 rows, sensor mean range [0.030, 9064.228]
+2026-05-21 08:50:05 | INFO     | src.condition_normaliser | Cluster 3: 28853 rows, sensor mean range [0.020, 8327.716]
+2026-05-21 08:50:05 | INFO     | src.condition_normaliser | Cluster 4: 17320 rows, sensor mean range [0.030, 8785.677]
+2026-05-21 08:50:05 | INFO     | src.condition_normaliser | Cluster 5: 17199 rows, sensor mean range [0.020, 8356.001]
+2026-05-21 08:50:06 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 160359 rows assigned across 6 clusters
