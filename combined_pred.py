@@ -1,75 +1,122 @@
+#!/usr/bin/env python3
+"""
+combined_pred.py — Evaluate separately-trained models across all four CMAPSS datasets.
+
+Loads the four separate models (one per dataset) produced by train.py --mode separate,
+applies the correct preprocessing pipeline, and reports per-dataset and overall RMSE.
+
+Usage:
+    python combined_pred.py --features engineered
+    python combined_pred.py --features raw
+    python combined_pred.py --features engineered --config configs/default.yaml
+"""
+import argparse
+import logging
 import os
-import joblib
-import json
-from datetime import datetime
-from sklearn.ensemble import VotingRegressor
 
-# --- Config ---
-dataset_ids = ["FD001", "FD002", "FD003", "FD004"]
-quantiles = [0.05, 0.50, 0.95]
-output_dir = "ensemble_models"
+import numpy as np
+from sklearn.metrics import mean_squared_error
 
-# --- Step 1: Load models for a single quantile ---
-def load_models_for_quantile(quantile, dataset_ids):
-    models = {}
-    for ds_id in dataset_ids:
-        model_dir = f"saved_models_{ds_id}"
-        model_path = os.path.join(model_dir, f"quantile_{quantile:.2f}_model.pkl")
-        if os.path.exists(model_path):
-            models[ds_id] = joblib.load(model_path)
-        else:
-            print(f"Warning: Model not found at {model_path}")
-    return models
+from src.utils import setup_logging
+from src.config import Config
+from src.data import load_raw
+from src.condition_normaliser import ConditionNormaliser
+from src.feature_engineering import FeatureEngineer
+from src.model import RULModel
 
-# --- Step 2: Create ensemble for a single quantile ---
-def create_ensemble_for_quantile(quantile, dataset_ids):
-    models = load_models_for_quantile(quantile, dataset_ids)
-    if not models:
-        raise ValueError(f"No models found for quantile {quantile}")
+logger = logging.getLogger(__name__)
 
-    estimators = [(f"{ds_id}_q{quantile}", model) for ds_id, model in models.items()]
-    ensemble = VotingRegressor(estimators=estimators)
-    # Sub-estimators are already fitted; set estimators_ so sklearn treats this as fitted
-    ensemble.estimators_ = [model for _, model in estimators]
-    return ensemble
 
-# --- Step 3: Load and ensemble all quantiles ---
-def load_and_ensemble_all_quantiles(dataset_ids, quantiles):
-    ensemble_models = {}
-    for q in quantiles:
-        ensemble = create_ensemble_for_quantile(q, dataset_ids)
-        ensemble_models[q] = ensemble
-        print(f"Created ensemble for quantile {q:.2f}")
-    return ensemble_models
+def _preprocess_test(test_df, normaliser, fe, features):
+    """Mirror the separate-mode preprocessing from train.py."""
+    if features == "engineered":
+        norm_test = normaliser.transform(test_df)
+        eng_test, feat_cols = fe.transform(norm_test, dataset_id=None)
+    else:
+        feat_cols = ["time"] + list(fe.sensor_cols)
+        eng_test = test_df.copy()
+    return eng_test, feat_cols
 
-# --- Step 4: Save ensemble models ---
-def save_ensemble_models(ensemble_models, output_dir):
-    os.makedirs(output_dir, exist_ok=True)
-    for q, ensemble in ensemble_models.items():
-        model_path = os.path.join(output_dir, f"ensemble_quantile_{q:.2f}_model.pkl")
-        joblib.dump(ensemble, model_path)
-        print(f"Saved ensemble model for quantile {q:.2f} to {model_path}")
 
-    # Save metadata
-    metadata = {
-        "quantiles": quantiles,
-        "dataset_ids": dataset_ids,
-        "training_date": datetime.now().isoformat(),
-        "notes": "Ensemble of XGBoost models trained on NASA FD001-FD004 datasets"
-    }
-    with open(os.path.join(output_dir, "metadata.json"), "w") as f:
-        json.dump(metadata, f, indent=2)
+def _predict_rmse(model, eng_test, rul_labels, feat_cols, cap):
+    test_last = eng_test.groupby("unit_no").last().reset_index()
+    test_last = test_last.merge(rul_labels, on="unit_no")
+    y_true = test_last["RUL"].clip(0, cap).values
+    y_pred = model.predict(test_last[feat_cols].values)
+    rmse = float(np.sqrt(mean_squared_error(y_true, y_pred)))
+    return y_true, y_pred, rmse
 
-# --- Run the workflow ---
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Evaluate separate-mode models across all CMAPSS datasets"
+    )
+    parser.add_argument("--features", choices=["raw", "engineered"], required=True,
+                        help="Which set of models to evaluate (raw or engineered)")
+    parser.add_argument("--config", default="configs/default.yaml",
+                        help="Path to YAML config (default: configs/default.yaml)")
+    parser.add_argument("--cap", type=int, default=None,
+                        help="Override data.rul_cap from config")
+    args = parser.parse_args()
+
+    cfg = Config.from_yaml(args.config)
+    if args.cap is not None:
+        cfg.data.rul_cap = args.cap
+
+    setup_logging()
+
+    fe_path = os.path.join(cfg.paths.models_dir, "feature_engineer.pkl")
+    if not os.path.exists(fe_path):
+        raise FileNotFoundError(
+            f"{fe_path} not found — run train.py first to generate preprocessing artifacts."
+        )
+    fe = FeatureEngineer.load(fe_path)
+
+    normaliser = None
+    if args.features == "engineered":
+        norm_path = os.path.join(cfg.paths.models_dir, "condition_normaliser.pkl")
+        if not os.path.exists(norm_path):
+            raise FileNotFoundError(
+                f"{norm_path} not found — run train.py --features engineered first."
+            )
+        normaliser = ConditionNormaliser.load(norm_path)
+
+    all_y_true, all_y_pred = [], []
+    results = {}
+
+    for ds in cfg.data.datasets:
+        model_path = os.path.join(cfg.paths.models_dir, f"separate_{args.features}_{ds}.pkl")
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(
+                f"{model_path} not found — run "
+                f"train.py --mode separate --features {args.features} first."
+            )
+        model = RULModel.load(model_path)
+
+        _, test_df, rul_labels = load_raw(cfg.data.dir, ds)
+        eng_test, feat_cols = _preprocess_test(test_df, normaliser, fe, args.features)
+
+        y_true, y_pred, rmse = _predict_rmse(model, eng_test, rul_labels, feat_cols, cfg.data.rul_cap)
+        results[ds] = rmse
+        all_y_true.append(y_true)
+        all_y_pred.append(y_pred)
+        logger.info("%s RMSE: %.4f", ds, rmse)
+
+    overall = float(np.sqrt(mean_squared_error(
+        np.concatenate(all_y_true), np.concatenate(all_y_pred)
+    )))
+
+    print(f"\n{'='*45}")
+    print(f"  Separate models — features={args.features}, cap={cfg.data.rul_cap}")
+    print(f"{'='*45}")
+    print(f"  {'Dataset':<10} {'RMSE':>10}")
+    print(f"  {'-'*22}")
+    for ds, rmse in results.items():
+        print(f"  {ds:<10} {rmse:>10.4f}")
+    print(f"  {'-'*22}")
+    print(f"  {'Overall':<10} {overall:>10.4f}")
+    print(f"{'='*45}\n")
+
+
 if __name__ == "__main__":
-    # Load and ensemble all models
-    ensemble_models = load_and_ensemble_all_quantiles(dataset_ids, quantiles)
-
-    # Save ensemble models
-    save_ensemble_models(ensemble_models, output_dir)
-
-    # Test the ensembles (optional)
-    '''X_test = ...  # Your test data (14 features)
-    for q, ensemble in ensemble_models.items():
-        y_pred = ensemble.predict(X_test)
-        print(f"Quantile {q:.2f} predictions: {y_pred[:5]}")  # Print first 5 predictions'''
+    main()

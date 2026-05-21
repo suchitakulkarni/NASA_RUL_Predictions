@@ -1,5 +1,6 @@
 # src/feature_engineering.py
 import logging
+import joblib
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -44,20 +45,22 @@ class FeatureEngineer:
 
         df = df.copy()
 
+        new_cols = {}
         for col in self.sensor_cols:
             for w in self.window_sizes:
                 grouped = df.groupby("unit_no")[col]
-                df[f"{col}_roll_mean_{w}"] = grouped.transform(
+                new_cols[f"{col}_roll_mean_{w}"] = grouped.transform(
                     lambda x, w=w: x.rolling(w, min_periods=1).mean()
                 )
-                df[f"{col}_roll_std_{w}"] = grouped.transform(
+                new_cols[f"{col}_roll_std_{w}"] = grouped.transform(
                     lambda x, w=w: x.rolling(w, min_periods=1).std().fillna(0.0)
                 )
 
-        df["cycle_norm"] = df["time"] / self.max_cycle
-
+        new_cols["cycle_norm"] = df["time"] / self.max_cycle
         if dataset_id is not None:
-            df["dataset_id"] = int(dataset_id)
+            new_cols["dataset_id"] = int(dataset_id)
+
+        df = pd.concat([df, pd.DataFrame(new_cols, index=df.index)], axis=1)
 
         roll_cols = [c for c in df.columns if "_roll_" in c]
         extra_cols = ["cycle_norm"] + (["dataset_id"] if dataset_id is not None else [])
@@ -76,3 +79,13 @@ class FeatureEngineer:
 
     def fit_transform(self, df, dataset_id=None):
         return self.fit(df).transform(df, dataset_id=dataset_id)
+
+    def save(self, path):
+        joblib.dump(self, path)
+        logger.info("FeatureEngineer saved to %s", path)
+
+    @classmethod
+    def load(cls, path):
+        obj = joblib.load(path)
+        logger.info("FeatureEngineer loaded from %s", path)
+        return obj

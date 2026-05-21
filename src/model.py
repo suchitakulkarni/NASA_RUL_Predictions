@@ -4,11 +4,29 @@ import logging, joblib
 import numpy as np
 import pandas as pd
 import optuna
+import xgboost as xgb
 from xgboost import XGBRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error
+from src.config import ModelConfig
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+
+class _XGBPruningCallback(xgb.callback.TrainingCallback):
+    """Report per-round val RMSE to Optuna so unpromising trials are cut early."""
+
+    def __init__(self, trial: optuna.Trial) -> None:
+        super().__init__()
+        self._trial = trial
+
+    def after_iteration(self, model, epoch: int, evals_log: dict) -> bool:
+        # evals_log: {"validation_0": {"rmse": [...]}}
+        scores = next(iter(next(iter(evals_log.values())).values()))
+        self._trial.report(scores[-1], epoch)
+        if self._trial.should_prune():
+            raise optuna.TrialPruned()
+        return False
 
 logger = logging.getLogger(__name__)
 
@@ -143,53 +161,83 @@ class RULModel:
         self.best_params = None
         self.val_rmse = None
 
-    def train(self, X, y, optuna_trials=100, stratify=None, n_jobs=-1):
+    def train(self, X, y, cfg: ModelConfig, stratify=None, n_jobs=-1, feat_cols=None):
         """
-        Find best hyperparameters via Optuna (20% holdout), then fit final
-        model on full (X, y).  Pass stratify=dataset_id_array for the joint
-        model so each dataset is equally represented in the holdout.
-        n_jobs controls XGBoost CPU threads; pass 1 when running multiple
-        models in parallel to avoid core oversubscription.
+        Find best hyperparameters via Optuna (cfg.val_split holdout), then fit
+        final model on full (X, y).
+
+        cfg:       ModelConfig driving trials, val_split, random_state, search bounds.
+        stratify:  dataset_id array for joint mode so each dataset is equally
+                   represented in the holdout.
+        n_jobs:    XGBoost CPU threads; pass 1 when running multiple models in
+                   parallel to avoid core oversubscription.
+        feat_cols: column names matching X columns; used to enforce a monotone
+                   decreasing constraint on cycle_norm (RUL must fall as the
+                   engine ages).
         """
         X = np.asarray(X, dtype=float)
         y = np.asarray(y, dtype=float)
+        ss = cfg.search_space
+
+        mono = None
+        if feat_cols is not None and "cycle_norm" in feat_cols:
+            mono = tuple(-1 if c == "cycle_norm" else 0 for c in feat_cols)
+            logger.info(
+                "Monotone constraint: cycle_norm (index %d) set to -1, all others 0",
+                list(feat_cols).index("cycle_norm"),
+            )
 
         X_tr, X_val, y_tr, y_val = train_test_split(
-            X, y, test_size=0.2, random_state=42, stratify=stratify
+            X, y, test_size=cfg.val_split, random_state=cfg.random_state, stratify=stratify
         )
         logger.info(
             "Optuna search: train=%d, val=%d, trials=%d, n_jobs=%d",
-            len(X_tr), len(X_val), optuna_trials, n_jobs,
+            len(X_tr), len(X_val), cfg.optuna_trials, n_jobs,
         )
+
+        early_stop = cfg.early_stopping_rounds
 
         def objective(trial):
             params = {
-                "n_estimators":     trial.suggest_int("n_estimators", 50, 500),
-                "max_depth":        trial.suggest_int("max_depth", 3, 10),
-                "learning_rate":    trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
-                "subsample":        trial.suggest_float("subsample", 0.5, 1.0),
-                "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
-                "reg_alpha":        trial.suggest_float("reg_alpha", 1e-6, 10.0, log=True),
-                "reg_lambda":       trial.suggest_float("reg_lambda", 1e-6, 10.0, log=True),
+                "n_estimators":     trial.suggest_int("n_estimators", *ss.n_estimators),
+                "max_depth":        trial.suggest_int("max_depth", *ss.max_depth),
+                "learning_rate":    trial.suggest_float("learning_rate", *ss.learning_rate, log=True),
+                "subsample":        trial.suggest_float("subsample", *ss.subsample),
+                "colsample_bytree": trial.suggest_float("colsample_bytree", *ss.colsample_bytree),
+                "reg_alpha":        trial.suggest_float("reg_alpha", *ss.reg_alpha, log=True),
+                "reg_lambda":       trial.suggest_float("reg_lambda", *ss.reg_lambda, log=True),
                 "verbosity": 0,
-                "random_state": 42,
+                "random_state": cfg.random_state,
                 "n_jobs": n_jobs,
+                "early_stopping_rounds": early_stop,
             }
-            m = XGBRegressor(**params)
-            m.fit(X_tr, y_tr, verbose=False)
+            if mono is not None:
+                params["monotone_constraints"] = mono
+            m = XGBRegressor(**params, callbacks=[_XGBPruningCallback(trial)])
+            m.fit(X_tr, y_tr, eval_set=[(X_val, y_val)], verbose=False)
             rmse = np.sqrt(mean_squared_error(y_val, m.predict(X_val)))
             return rmse
 
-        study = optuna.create_study(direction="minimize")
-        study.optimize(objective, n_trials=optuna_trials)
+        pruner = optuna.pruners.MedianPruner(
+            n_startup_trials=cfg.pruner_startup_trials,
+            n_warmup_steps=cfg.pruner_warmup_steps,
+        )
+        study = optuna.create_study(direction="minimize", pruner=pruner)
+        study.optimize(objective, n_trials=cfg.optuna_trials)
 
         self.best_params = study.best_params
         self.val_rmse = study.best_value
         logger.info("Best val RMSE=%.4f, params=%s", self.val_rmse, self.best_params)
 
-        self.model = XGBRegressor(
-            **self.best_params, verbosity=0, random_state=42, n_jobs=n_jobs
-        )
+        final_params = {
+            **self.best_params,
+            "verbosity": 0,
+            "random_state": cfg.random_state,
+            "n_jobs": n_jobs,
+        }
+        if mono is not None:
+            final_params["monotone_constraints"] = mono
+        self.model = XGBRegressor(**final_params)
         self.model.fit(X, y, verbose=False)
         logger.info("Final model fitted on %d samples", len(X))
         return self

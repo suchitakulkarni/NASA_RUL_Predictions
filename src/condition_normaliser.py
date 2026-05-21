@@ -11,8 +11,9 @@ OP_COLS = ["op1", "op2", "op3"]
 
 
 class ConditionNormaliser:
-    def __init__(self, n_clusters=6, random_state=42):
+    def __init__(self, n_clusters=6, n_init=10, random_state=42):
         self.n_clusters = n_clusters
+        self.n_init = n_init
         self.random_state = random_state
         self.kmeans = None
         self.sensor_cols = None
@@ -26,7 +27,7 @@ class ConditionNormaliser:
         self.sensor_cols = list(sensor_cols)
 
         self.kmeans = KMeans(
-            n_clusters=self.n_clusters, random_state=self.random_state, n_init=10
+            n_clusters=self.n_clusters, random_state=self.random_state, n_init=self.n_init
         )
         labels = self.kmeans.fit_predict(df[OP_COLS])
 

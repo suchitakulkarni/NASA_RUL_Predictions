@@ -2,9 +2,13 @@
 """
 train.py — Train RUL model on CMAPSS datasets.
 
+Config is loaded from configs/default.yaml. CLI flags override individual values
+for quick experiments without editing the file.
+
 Usage:
-    python train.py --mode joint --trials 100 --cap 125 --window 5 10
-    python train.py --mode separate --trials 50 --cap 125
+    python train.py --mode joint    --features engineered
+    python train.py --mode separate --features raw
+    python train.py --mode joint    --features engineered --trials 50 --cap 100 --window 5 10
 """
 import argparse
 import logging
@@ -15,16 +19,14 @@ import pandas as pd
 from sklearn.metrics import mean_squared_error
 
 from src.utils import setup_logging
+from src.config import Config
 from src.data import load_raw
 from src.condition_normaliser import ConditionNormaliser
 from src.feature_engineering import FeatureEngineer
 from src.rul_target import compute_rul
 from src.model import RULModel
 
-DATASETS = ["FD001", "FD002", "FD003", "FD004"]
-DATA_DIR = "./CMAPSSData"
 SENSOR_COLS = ["s" + str(i) for i in range(1, 22)]
-MODELS_DIR = "results/models"
 
 logger = logging.getLogger(__name__)
 
@@ -39,106 +41,152 @@ def _test_rmse(model, test_df, rul_labels, feat_cols, cap):
     return float(np.sqrt(mean_squared_error(y_test, y_pred)))
 
 
+def _make_features(train_df, test_df, ds_id, normaliser, fe, mode, features):
+    """
+    Prepare (X_train, y_train, processed_test_df, feat_cols) for one dataset.
+
+    raw:        same kept sensor columns + raw cycle time, no rolling stats or
+                condition normalisation.
+    engineered: condition-normalised sensors + rolling stats + cycle_norm.
+
+    ds_id is appended as dataset_id only in joint mode.
+    """
+    include_ds = (mode == "joint")
+
+    if features == "engineered":
+        norm_train = normaliser.transform(train_df)
+        norm_test  = normaliser.transform(test_df)
+        eng_train, feat_cols = fe.transform(norm_train, dataset_id=ds_id if include_ds else None)
+        eng_test,  _         = fe.transform(norm_test,  dataset_id=ds_id if include_ds else None)
+    else:
+        feat_cols = ["time"] + list(fe.sensor_cols)
+        eng_train = train_df.copy()
+        eng_test  = test_df.copy()
+        if include_ds:
+            eng_train["dataset_id"] = ds_id
+            eng_test["dataset_id"]  = ds_id
+            feat_cols = feat_cols + ["dataset_id"]
+
+    X_train = eng_train[feat_cols].values
+    y_train = eng_train["RUL"].values
+    return X_train, y_train, eng_test, feat_cols
+
+
 def main():
     parser = argparse.ArgumentParser(description="Train RUL model on CMAPSS datasets")
-    parser.add_argument("--mode",    choices=["separate", "joint"], default="joint",
+    parser.add_argument("--config",   default="configs/default.yaml",
+                        help="Path to YAML config (default: configs/default.yaml)")
+    parser.add_argument("--mode",     choices=["separate", "joint"], default="joint",
                         help="separate: one model per dataset; joint: one model on all four")
-    parser.add_argument("--trials",  type=int, default=100,
-                        help="Number of Optuna trials (default 100)")
-    parser.add_argument("--cap",     type=int, default=125,
-                        help="RUL cap in cycles (default 125)")
-    parser.add_argument("--window",  type=int, nargs="+", default=[5, 10],
-                        help="Rolling window sizes (default 5 10)")
+    parser.add_argument("--features", choices=["raw", "engineered"], default="engineered",
+                        help="raw: sensor values + time only; engineered: rolling stats + cycle_norm")
+    # CLI overrides — when provided, take precedence over the config file
+    parser.add_argument("--cap",     type=int,       default=None,
+                        help="Override data.rul_cap in config")
+    parser.add_argument("--trials",  type=int,       default=None,
+                        help="Override model.optuna_trials in config")
+    parser.add_argument("--window",  type=int, nargs="+", default=None,
+                        help="Override features.window_sizes in config")
     args = parser.parse_args()
 
+    cfg = Config.from_yaml(args.config)
+
+    # Apply CLI overrides
+    if args.cap is not None:
+        cfg.data.rul_cap = args.cap
+    if args.trials is not None:
+        cfg.model.optuna_trials = args.trials
+    if args.window is not None:
+        cfg.features.window_sizes = args.window
+
     setup_logging()
-    os.makedirs(MODELS_DIR, exist_ok=True)
+    os.makedirs(cfg.paths.models_dir, exist_ok=True)
 
     logger.info(
-        "Training: mode=%s, trials=%d, cap=%d, windows=%s",
-        args.mode, args.trials, args.cap, args.window,
+        "Training: mode=%s, features=%s, trials=%d, cap=%d, windows=%s",
+        args.mode, args.features, cfg.model.optuna_trials,
+        cfg.data.rul_cap, cfg.features.window_sizes,
     )
+    logger.info("Full config: %s", cfg.to_flat_dict())
 
-    # Load all four datasets (raw, time column preserved)
     dataset_map = {}
-    for ds in DATASETS:
-        train_df, test_df, rul_labels = load_raw(DATA_DIR, ds)
-        train_df = compute_rul(train_df, cap=args.cap)
+    for ds in cfg.data.datasets:
+        train_df, test_df, rul_labels = load_raw(cfg.data.dir, ds)
+        train_df = compute_rul(train_df, cap=cfg.data.rul_cap)
         dataset_map[ds] = (train_df, test_df, rul_labels)
 
-    # Fit ConditionNormaliser on all training data combined
     all_train = pd.concat(
         [df for df, _, _ in dataset_map.values()], ignore_index=True
     )
     sensor_cols = [c for c in SENSOR_COLS if c in all_train.columns]
-    normaliser = ConditionNormaliser(n_clusters=6)
-    normaliser.fit(all_train, sensor_cols)
-    normaliser.save(os.path.join(MODELS_DIR, "condition_normaliser.pkl"))
 
-    # Fit FeatureEngineer on all training data (global max_cycle)
-    fe = FeatureEngineer(window_sizes=args.window)
+    # Always fit both; fe.sensor_cols is needed even in raw mode
+    normaliser = ConditionNormaliser(
+        n_clusters=cfg.condition_normaliser.n_clusters,
+        n_init=cfg.condition_normaliser.n_init,
+        random_state=cfg.condition_normaliser.random_state,
+    )
+    normaliser.fit(all_train, sensor_cols)
+
+    fe = FeatureEngineer(
+        drop_sensors=cfg.features.sensors_to_drop,
+        window_sizes=cfg.features.window_sizes,
+    )
     fe.fit(all_train)
 
+    fe.save(os.path.join(cfg.paths.models_dir, "feature_engineer.pkl"))
+    if args.features == "engineered":
+        normaliser.save(os.path.join(cfg.paths.models_dir, "condition_normaliser.pkl"))
+
     if args.mode == "joint":
-        _train_joint(dataset_map, normaliser, fe, args)
+        _train_joint(dataset_map, normaliser, fe, cfg, args)
     else:
-        _train_separate(dataset_map, normaliser, fe, args)
+        _train_separate(dataset_map, normaliser, fe, cfg, args)
 
 
-def _train_joint(dataset_map, normaliser, fe, args):
+def _train_joint(dataset_map, normaliser, fe, cfg, args):
     X_parts, y_parts, strat_parts, test_data = [], [], [], {}
 
-    for i, ds in enumerate(DATASETS, start=1):
+    for i, ds in enumerate(cfg.data.datasets, start=1):
         train_df, test_df, rul_labels = dataset_map[ds]
-
-        norm_train = normaliser.transform(train_df)
-        norm_test  = normaliser.transform(test_df)
-
-        eng_train, feat_cols = fe.transform(norm_train, dataset_id=i)
-        eng_test,  _         = fe.transform(norm_test,  dataset_id=i)
-
-        X_parts.append(eng_train[feat_cols].values)
-        y_parts.append(eng_train["RUL"].values)
-        strat_parts.append(np.full(len(eng_train), i, dtype=int))
+        X_train, y_train, eng_test, feat_cols = _make_features(
+            train_df, test_df, i, normaliser, fe, "joint", args.features
+        )
+        X_parts.append(X_train)
+        y_parts.append(y_train)
+        strat_parts.append(np.full(len(X_train), i, dtype=int))
         test_data[ds] = (eng_test, rul_labels, feat_cols)
 
-    X_all    = np.concatenate(X_parts)
-    y_all    = np.concatenate(y_parts)
-    strat    = np.concatenate(strat_parts)
+    X_all = np.concatenate(X_parts)
+    y_all = np.concatenate(y_parts)
+    strat = np.concatenate(strat_parts)
 
     logger.info("Joint training matrix: X=%s y=%s", X_all.shape, y_all.shape)
 
     model = RULModel()
-    model.train(X_all, y_all, optuna_trials=args.trials, stratify=strat)
-    model.save(os.path.join(MODELS_DIR, "joint_model.pkl"))
+    model.train(X_all, y_all, cfg=cfg.model, stratify=strat, feat_cols=feat_cols)
+    model.save(os.path.join(cfg.paths.models_dir, f"joint_{args.features}_model.pkl"))
 
     for ds, (eng_test, rul_labels, feat_cols) in test_data.items():
-        rmse = _test_rmse(model, eng_test, rul_labels, feat_cols, args.cap)
-        logger.info("Joint model test RMSE on %s: %.4f", ds, rmse)
+        rmse = _test_rmse(model, eng_test, rul_labels, feat_cols, cfg.data.rul_cap)
+        logger.info("Joint %s model RMSE on %s: %.4f", args.features, ds, rmse)
 
 
-def _train_separate(dataset_map, normaliser, fe, args):
-    for i, ds in enumerate(DATASETS, start=1):
+def _train_separate(dataset_map, normaliser, fe, cfg, args):
+    for i, ds in enumerate(cfg.data.datasets, start=1):
         train_df, test_df, rul_labels = dataset_map[ds]
+        X_train, y_train, eng_test, feat_cols = _make_features(
+            train_df, test_df, i, normaliser, fe, "separate", args.features
+        )
 
-        norm_train = normaliser.transform(train_df)
-        norm_test  = normaliser.transform(test_df)
-
-        # No dataset_id for separate models — constant feature adds no signal
-        eng_train, feat_cols = fe.transform(norm_train, dataset_id=None)
-        eng_test,  _         = fe.transform(norm_test,  dataset_id=None)
-
-        X_train = eng_train[feat_cols].values
-        y_train = eng_train["RUL"].values
-
-        logger.info("Separate model for %s: X=%s", ds, X_train.shape)
+        logger.info("Separate %s model for %s: X=%s", args.features, ds, X_train.shape)
 
         model = RULModel()
-        model.train(X_train, y_train, optuna_trials=args.trials)
-        model.save(os.path.join(MODELS_DIR, f"separate_model_{ds}.pkl"))
+        model.train(X_train, y_train, cfg=cfg.model, feat_cols=feat_cols)
+        model.save(os.path.join(cfg.paths.models_dir, f"separate_{args.features}_{ds}.pkl"))
 
-        rmse = _test_rmse(model, eng_test, rul_labels, feat_cols, args.cap)
-        logger.info("Separate model test RMSE on %s: %.4f", ds, rmse)
+        rmse = _test_rmse(model, eng_test, rul_labels, feat_cols, cfg.data.rul_cap)
+        logger.info("Separate %s model RMSE on %s: %.4f", args.features, ds, rmse)
 
 
 if __name__ == "__main__":

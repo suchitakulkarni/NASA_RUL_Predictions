@@ -1,0 +1,32 @@
+data:
+  dir: "./CMAPSSData"
+  datasets: ["FD001", "FD002", "FD003", "FD004"]
+  rul_cap: 125
+
+paths:
+  models_dir: "results/models"
+
+features:
+  sensors_to_drop: ["s1", "s5", "s6", "s10", "s16", "s18", "s19"]
+  window_sizes: [5, 10, 20, 30]
+
+condition_normaliser:
+  n_clusters: 6
+  n_init: 10
+  random_state: 42
+
+model:
+  optuna_trials: 100
+  val_split: 0.2
+  random_state: 42
+  early_stopping_rounds: 50   # stop a trial's trees if val doesn't improve for N rounds
+  pruner_startup_trials: 10   # run at least this many trials before pruning kicks in
+  pruner_warmup_steps: 20     # ignore the first N boosting rounds before pruning
+  search_space:
+    n_estimators: [50, 500]
+    max_depth: [3, 10]
+    learning_rate: [0.01, 0.3]
+    subsample: [0.5, 1.0]
+    colsample_bytree: [0.5, 1.0]
+    reg_alpha: [1.0e-6, 10.0]
+    reg_lambda: [1.0e-6, 10.0]
