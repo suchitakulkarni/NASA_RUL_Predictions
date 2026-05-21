@@ -67,15 +67,12 @@ guarantees on unseen test units.
 
 ### Engineered vs raw pipeline comparison (separate models, cap=125, windows=[5, 10, 20, 30])
 
-| Dataset | Individual Model | Combined Model |
-|---|------|------|
-|   |Raw features | Engineered features | Raw features | engineered features | 
-|---|---|---|---|
-| FD001 | _ | _placeholder_ |
-| FD002 | _placeholder_ | _placeholder_ |
-| FD003 | _placeholder_ | _placeholder_ |
-| FD004 | _placeholder_ | _placeholder_ |
-| Overall | _placeholder_ | _placeholder_ |
+| Dataset | Individual Model |          | Combined Model |          |
+|-------|-----------|----------|------------|----------|
+|   |Raw features | Engineered features | Raw features | engineered features |
+| FD001 | 17.34      | 15.69      | 15.95       | 14.41     |
+| FD002 | 16.24      | 14.96      | 15.94       | 14.17     |
+
 
 ### Predicted vs actual RUL
 
