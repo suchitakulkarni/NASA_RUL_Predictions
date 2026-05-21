@@ -1,13 +1,64 @@
-2026-05-21 08:50:03 | INFO     | src.data | Loaded FD001: train=20631 rows/100 units, test=13096 rows/100 units
-2026-05-21 08:50:03 | INFO     | src.data | Loaded FD002: train=53759 rows/260 units, test=33991 rows/259 units
-2026-05-21 08:50:04 | INFO     | src.data | Loaded FD003: train=24720 rows/100 units, test=16596 rows/100 units
-2026-05-21 08:50:04 | INFO     | src.data | Loaded FD004: train=61249 rows/249 units, test=41214 rows/248 units
-2026-05-21 08:50:04 | INFO     | src.condition_normaliser | Fitting ConditionNormaliser: n_clusters=6, 160359 rows, 21 sensors
-2026-05-21 08:50:05 | INFO     | src.condition_normaliser | Cluster distribution: {0: 17213, 1: 17141, 2: 62633, 3: 28853, 4: 17320, 5: 17199}
-2026-05-21 08:50:05 | INFO     | src.condition_normaliser | Cluster 0: 17213 rows, sensor mean range [0.022, 8729.498]
-2026-05-21 08:50:05 | INFO     | src.condition_normaliser | Cluster 1: 17141 rows, sensor mean range [0.020, 8014.747]
-2026-05-21 08:50:05 | INFO     | src.condition_normaliser | Cluster 2: 62633 rows, sensor mean range [0.030, 9064.228]
-2026-05-21 08:50:05 | INFO     | src.condition_normaliser | Cluster 3: 28853 rows, sensor mean range [0.020, 8327.716]
-2026-05-21 08:50:05 | INFO     | src.condition_normaliser | Cluster 4: 17320 rows, sensor mean range [0.030, 8785.677]
-2026-05-21 08:50:05 | INFO     | src.condition_normaliser | Cluster 5: 17199 rows, sensor mean range [0.020, 8356.001]
-2026-05-21 08:50:06 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 160359 rows assigned across 6 clusters
+2026-05-21 09:14:53 | INFO     | __main__ | Training: mode=joint, trials=100, cap=125, windows=[5, 10]
+2026-05-21 09:14:53 | INFO     | src.data | Loaded FD001: train=20631 rows/100 units, test=13096 rows/100 units
+2026-05-21 09:14:53 | INFO     | src.rul_target | RUL computed: cap=125, min=0.0, max=125.0, mean=86.8
+2026-05-21 09:14:54 | INFO     | src.data | Loaded FD002: train=53759 rows/260 units, test=33991 rows/259 units
+2026-05-21 09:14:54 | INFO     | src.rul_target | RUL computed: cap=125, min=0.0, max=125.0, mean=86.9
+2026-05-21 09:14:54 | INFO     | src.data | Loaded FD003: train=24720 rows/100 units, test=16596 rows/100 units
+2026-05-21 09:14:54 | INFO     | src.rul_target | RUL computed: cap=125, min=0.0, max=125.0, mean=93.1
+2026-05-21 09:14:54 | INFO     | src.data | Loaded FD004: train=61249 rows/249 units, test=41214 rows/248 units
+2026-05-21 09:14:54 | INFO     | src.rul_target | RUL computed: cap=125, min=0.0, max=125.0, mean=93.0
+2026-05-21 09:14:54 | INFO     | src.condition_normaliser | Fitting ConditionNormaliser: n_clusters=6, 160359 rows, 21 sensors
+2026-05-21 09:14:54 | INFO     | src.condition_normaliser | Cluster distribution: {0: 17213, 1: 17141, 2: 62633, 3: 28853, 4: 17320, 5: 17199}
+2026-05-21 09:14:54 | INFO     | src.condition_normaliser | Cluster 0: 17213 rows, sensor mean range [0.022, 8729.498]
+2026-05-21 09:14:54 | INFO     | src.condition_normaliser | Cluster 1: 17141 rows, sensor mean range [0.020, 8014.747]
+2026-05-21 09:14:54 | INFO     | src.condition_normaliser | Cluster 2: 62633 rows, sensor mean range [0.030, 9064.228]
+2026-05-21 09:14:54 | INFO     | src.condition_normaliser | Cluster 3: 28853 rows, sensor mean range [0.020, 8327.716]
+2026-05-21 09:14:54 | INFO     | src.condition_normaliser | Cluster 4: 17320 rows, sensor mean range [0.030, 8785.677]
+2026-05-21 09:14:54 | INFO     | src.condition_normaliser | Cluster 5: 17199 rows, sensor mean range [0.020, 8356.001]
+2026-05-21 09:14:54 | INFO     | src.condition_normaliser | ConditionNormaliser saved to results/models/condition_normaliser.pkl
+2026-05-21 09:14:54 | INFO     | src.feature_engineering | FeatureEngineer fit: keeping 14/21 sensors (dropped: ['s1', 's5', 's6', 's10', 's16', 's18', 's19']), max_cycle=543
+2026-05-21 09:14:54 | WARNING  | src.condition_normaliser | Cluster 0 has no rows in this split — skipping
+2026-05-21 09:14:54 | WARNING  | src.condition_normaliser | Cluster 1 has no rows in this split — skipping
+2026-05-21 09:14:54 | WARNING  | src.condition_normaliser | Cluster 3 has no rows in this split — skipping
+2026-05-21 09:14:54 | WARNING  | src.condition_normaliser | Cluster 4 has no rows in this split — skipping
+2026-05-21 09:14:54 | WARNING  | src.condition_normaliser | Cluster 5 has no rows in this split — skipping
+2026-05-21 09:14:54 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 20631 rows assigned across 1 clusters
+2026-05-21 09:14:54 | WARNING  | src.condition_normaliser | Cluster 0 has no rows in this split — skipping
+2026-05-21 09:14:54 | WARNING  | src.condition_normaliser | Cluster 1 has no rows in this split — skipping
+2026-05-21 09:14:54 | WARNING  | src.condition_normaliser | Cluster 3 has no rows in this split — skipping
+2026-05-21 09:14:54 | WARNING  | src.condition_normaliser | Cluster 4 has no rows in this split — skipping
+2026-05-21 09:14:54 | WARNING  | src.condition_normaliser | Cluster 5 has no rows in this split — skipping
+2026-05-21 09:14:54 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 13096 rows assigned across 1 clusters
+2026-05-21 09:14:55 | INFO     | src.feature_engineering | FeatureEngineer.transform: 20631 rows, 72 features (14 sensors + 56 rolling + 2 extra)
+2026-05-21 09:14:56 | INFO     | src.feature_engineering | FeatureEngineer.transform: 13096 rows, 72 features (14 sensors + 56 rolling + 2 extra)
+2026-05-21 09:14:56 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 53759 rows assigned across 6 clusters
+2026-05-21 09:14:56 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 33991 rows assigned across 6 clusters
+2026-05-21 09:14:58 | INFO     | src.feature_engineering | FeatureEngineer.transform: 53759 rows, 72 features (14 sensors + 56 rolling + 2 extra)
+2026-05-21 09:14:59 | INFO     | src.feature_engineering | FeatureEngineer.transform: 33991 rows, 72 features (14 sensors + 56 rolling + 2 extra)
+2026-05-21 09:14:59 | WARNING  | src.condition_normaliser | Cluster 0 has no rows in this split — skipping
+2026-05-21 09:14:59 | WARNING  | src.condition_normaliser | Cluster 1 has no rows in this split — skipping
+2026-05-21 09:14:59 | WARNING  | src.condition_normaliser | Cluster 3 has no rows in this split — skipping
+2026-05-21 09:14:59 | WARNING  | src.condition_normaliser | Cluster 4 has no rows in this split — skipping
+2026-05-21 09:14:59 | WARNING  | src.condition_normaliser | Cluster 5 has no rows in this split — skipping
+2026-05-21 09:14:59 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 24720 rows assigned across 1 clusters
+2026-05-21 09:14:59 | WARNING  | src.condition_normaliser | Cluster 0 has no rows in this split — skipping
+2026-05-21 09:14:59 | WARNING  | src.condition_normaliser | Cluster 1 has no rows in this split — skipping
+2026-05-21 09:14:59 | WARNING  | src.condition_normaliser | Cluster 3 has no rows in this split — skipping
+2026-05-21 09:14:59 | WARNING  | src.condition_normaliser | Cluster 4 has no rows in this split — skipping
+2026-05-21 09:14:59 | WARNING  | src.condition_normaliser | Cluster 5 has no rows in this split — skipping
+2026-05-21 09:14:59 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 16596 rows assigned across 1 clusters
+2026-05-21 09:15:00 | INFO     | src.feature_engineering | FeatureEngineer.transform: 24720 rows, 72 features (14 sensors + 56 rolling + 2 extra)
+2026-05-21 09:15:01 | INFO     | src.feature_engineering | FeatureEngineer.transform: 16596 rows, 72 features (14 sensors + 56 rolling + 2 extra)
+2026-05-21 09:15:01 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 61249 rows assigned across 6 clusters
+2026-05-21 09:15:01 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 41214 rows assigned across 6 clusters
+2026-05-21 09:15:02 | INFO     | src.feature_engineering | FeatureEngineer.transform: 61249 rows, 72 features (14 sensors + 56 rolling + 2 extra)
+2026-05-21 09:15:04 | INFO     | src.feature_engineering | FeatureEngineer.transform: 41214 rows, 72 features (14 sensors + 56 rolling + 2 extra)
+2026-05-21 09:15:04 | INFO     | __main__ | Joint training matrix: X=(160359, 72) y=(160359,)
+2026-05-21 09:15:04 | INFO     | src.model | Optuna search: train=128287, val=32072, trials=100, n_jobs=-1
+2026-05-21 09:39:41 | INFO     | src.model | Best val RMSE=10.6342, params={'n_estimators': 488, 'max_depth': 10, 'learning_rate': 0.1040618905527034, 'subsample': 0.7988399610133591, 'colsample_bytree': 0.9398198080379544, 'reg_alpha': 1.2660243505837377e-05, 'reg_lambda': 9.783295507351074}
+2026-05-21 09:40:06 | INFO     | src.model | Final model fitted on 160359 samples
+2026-05-21 09:40:06 | INFO     | src.model | RULModel saved to results/models/joint_model.pkl
+2026-05-21 09:40:06 | INFO     | __main__ | Joint model test RMSE on FD001: 17.9071
+2026-05-21 09:40:06 | INFO     | __main__ | Joint model test RMSE on FD002: 15.6760
+2026-05-21 09:40:06 | INFO     | __main__ | Joint model test RMSE on FD003: 18.2108
+2026-05-21 09:40:06 | INFO     | __main__ | Joint model test RMSE on FD004: 17.8162
