@@ -1,5 +1,10 @@
 # NASA Turbofan Engine Remaining Useful Life (RUL) Prediction
 
+We show that our model saves more than 50% maintainance costs for Turbofan maintainance. 
+![Predicted vs Actual RUL](results/evaluation/business_summary.png) 
+
+The methodology is explained below. 
+
 Predicts the Remaining Useful Life (RUL) of turbofan engines using the NASA C-MAPSS dataset.
 The project compares two approaches side by side to quantify the value of feature engineering:
 a raw sensor baseline and a fully engineered pipeline, each trained in two modes (joint and separate).
@@ -78,7 +83,6 @@ guarantees on unseen test units.
 
 ### Predicted vs actual RUL
 
-_Plots will be added after re-running evaluation scripts._
 
 <table>
   <tr>
@@ -93,7 +97,6 @@ _Plots will be added after re-running evaluation scripts._
   </tr>
 </table>
 
-<!-- Replace with: ![Predicted vs Actual RUL](images/final_predictions.png) -->
 
 ## How to Run
 

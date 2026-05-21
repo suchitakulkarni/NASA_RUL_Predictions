@@ -2,3 +2,4 @@ src/__pycache__
 __pycache__
 .DS_Store
 nohup.out
+src/evaluate_old.py

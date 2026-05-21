@@ -1,28 +1,78 @@
-2026-05-21 19:57:35 | INFO     | __main__ | Using artifact_tag=separate_raw
-2026-05-21 19:57:35 | INFO     | src.feature_engineering | FeatureEngineer loaded from results/models/feature_engineer_separate_raw.pkl
-2026-05-21 19:57:35 | INFO     | src.conformal | ConformalPredictor loaded from results/models/conformal_predictor_joint_raw.pkl
-2026-05-21 19:57:35 | INFO     | __main__ | Conformal predictor loaded from results/models/conformal_predictor_joint_raw.pkl — uncertainty will be shown
-2026-05-21 19:57:36 | INFO     | src.model | RULModel loaded from results/models/joint_raw_model.pkl
-2026-05-21 19:57:36 | INFO     | src.feature_engineering | FeatureEngineer loaded from results/models/feature_engineer_joint_raw.pkl
-2026-05-21 19:57:36 | INFO     | __main__ | Joint raw model loaded for per-dataset comparison plots
-2026-05-21 19:57:36 | INFO     | src.model | RULModel loaded from results/models/separate_raw_FD001.pkl
-2026-05-21 19:57:36 | INFO     | src.data | Loaded FD001: train=20631 rows/100 units, test=13096 rows/100 units
-2026-05-21 19:57:36 | INFO     | __main__ | FD001 RMSE: 17.3431
-2026-05-21 19:57:36 | INFO     | src.visualisation | Comparison plot saved to results/pred_vs_true_separate_raw_FD001.png
-2026-05-21 19:57:36 | INFO     | __main__ | FD001 joint RMSE: 15.9539
-2026-05-21 19:57:36 | INFO     | src.model | RULModel loaded from results/models/separate_raw_FD002.pkl
-2026-05-21 19:57:36 | INFO     | src.data | Loaded FD002: train=53759 rows/260 units, test=33991 rows/259 units
-2026-05-21 19:57:36 | INFO     | __main__ | FD002 RMSE: 16.2424
-2026-05-21 19:57:36 | INFO     | src.visualisation | Comparison plot saved to results/pred_vs_true_separate_raw_FD002.png
-2026-05-21 19:57:36 | INFO     | __main__ | FD002 joint RMSE: 15.9365
-2026-05-21 19:57:36 | INFO     | src.model | RULModel loaded from results/models/separate_raw_FD003.pkl
-2026-05-21 19:57:36 | INFO     | src.data | Loaded FD003: train=24720 rows/100 units, test=16596 rows/100 units
-2026-05-21 19:57:36 | INFO     | __main__ | FD003 RMSE: 19.8359
-2026-05-21 19:57:36 | INFO     | src.visualisation | Comparison plot saved to results/pred_vs_true_separate_raw_FD003.png
-2026-05-21 19:57:36 | INFO     | __main__ | FD003 joint RMSE: 19.1753
-2026-05-21 19:57:36 | INFO     | src.model | RULModel loaded from results/models/separate_raw_FD004.pkl
-2026-05-21 19:57:36 | INFO     | src.data | Loaded FD004: train=61249 rows/249 units, test=41214 rows/248 units
-2026-05-21 19:57:36 | INFO     | __main__ | FD004 RMSE: 18.7717
-2026-05-21 19:57:37 | INFO     | src.visualisation | Comparison plot saved to results/pred_vs_true_separate_raw_FD004.png
-2026-05-21 19:57:37 | INFO     | __main__ | FD004 joint RMSE: 18.5084
-2026-05-21 19:57:37 | INFO     | src.visualisation | Plot saved to results/pred_vs_true_separate_raw.png
+2026-05-21 22:03:22 | INFO     | __main__ | Loading artifacts with tag=joint_engineered
+2026-05-21 22:03:22 | INFO     | src.model | RULModel loaded from results/models/joint_engineered_model.pkl
+2026-05-21 22:03:22 | INFO     | src.condition_normaliser | ConditionNormaliser loaded from results/models/condition_normaliser_joint_engineered.pkl
+2026-05-21 22:03:22 | INFO     | src.conformal | ConformalPredictor loaded from results/models/conformal_predictor_joint_engineered.pkl
+2026-05-21 22:03:22 | INFO     | src.feature_engineering | FeatureEngineer loaded from results/models/feature_engineer_joint_engineered.pkl
+2026-05-21 22:03:22 | INFO     | __main__ | FeatureEngineer loaded from results/models/feature_engineer_joint_engineered.pkl (window_sizes=[5, 10, 20, 30])
+2026-05-21 22:03:22 | INFO     | src.data | Loaded FD001: train=20631 rows/100 units, test=13096 rows/100 units
+2026-05-21 22:03:22 | WARNING  | src.condition_normaliser | Cluster 0 has no rows in this split — skipping
+2026-05-21 22:03:22 | WARNING  | src.condition_normaliser | Cluster 1 has no rows in this split — skipping
+2026-05-21 22:03:22 | WARNING  | src.condition_normaliser | Cluster 3 has no rows in this split — skipping
+2026-05-21 22:03:22 | WARNING  | src.condition_normaliser | Cluster 4 has no rows in this split — skipping
+2026-05-21 22:03:22 | WARNING  | src.condition_normaliser | Cluster 5 has no rows in this split — skipping
+2026-05-21 22:03:22 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 13096 rows assigned across 1 clusters
+2026-05-21 22:03:24 | INFO     | src.feature_engineering | FeatureEngineer.transform: 13096 rows, 128 features (14 sensors + 112 rolling + 2 extra)
+2026-05-21 22:03:24 | INFO     | __main__ | FD001 test: n=100, coverage=0.9100
+2026-05-21 22:03:24 | INFO     | src.evaluation | FD001 | RMSE=14.4123  MAE=10.4584  CMAPSS_score=340.42  n=100
+2026-05-21 22:03:24 | WARNING  | src.condition_normaliser | Cluster 0 has no rows in this split — skipping
+2026-05-21 22:03:24 | WARNING  | src.condition_normaliser | Cluster 1 has no rows in this split — skipping
+2026-05-21 22:03:24 | WARNING  | src.condition_normaliser | Cluster 3 has no rows in this split — skipping
+2026-05-21 22:03:24 | WARNING  | src.condition_normaliser | Cluster 4 has no rows in this split — skipping
+2026-05-21 22:03:24 | WARNING  | src.condition_normaliser | Cluster 5 has no rows in this split — skipping
+2026-05-21 22:03:24 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 13096 rows assigned across 1 clusters
+2026-05-21 22:03:25 | INFO     | src.feature_engineering | FeatureEngineer.transform: 13096 rows, 128 features (14 sensors + 112 rolling + 2 extra)
+2026-05-21 22:03:25 | INFO     | src.visualisation | RUL prediction plot saved to results/evaluation/rul_predictions_fd001.png
+2026-05-21 22:03:26 | INFO     | src.data | Loaded FD002: train=53759 rows/260 units, test=33991 rows/259 units
+2026-05-21 22:03:26 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 33991 rows assigned across 6 clusters
+2026-05-21 22:03:29 | INFO     | src.feature_engineering | FeatureEngineer.transform: 33991 rows, 128 features (14 sensors + 112 rolling + 2 extra)
+2026-05-21 22:03:29 | INFO     | __main__ | FD002 test: n=259, coverage=0.9228
+2026-05-21 22:03:29 | INFO     | src.evaluation | FD002 | RMSE=14.1714  MAE=10.5325  CMAPSS_score=816.18  n=259
+2026-05-21 22:03:29 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 33991 rows assigned across 6 clusters
+2026-05-21 22:03:32 | INFO     | src.feature_engineering | FeatureEngineer.transform: 33991 rows, 128 features (14 sensors + 112 rolling + 2 extra)
+2026-05-21 22:03:33 | INFO     | src.visualisation | RUL prediction plot saved to results/evaluation/rul_predictions_fd002.png
+2026-05-21 22:03:33 | INFO     | src.data | Loaded FD003: train=24720 rows/100 units, test=16596 rows/100 units
+2026-05-21 22:03:33 | WARNING  | src.condition_normaliser | Cluster 0 has no rows in this split — skipping
+2026-05-21 22:03:33 | WARNING  | src.condition_normaliser | Cluster 1 has no rows in this split — skipping
+2026-05-21 22:03:33 | WARNING  | src.condition_normaliser | Cluster 3 has no rows in this split — skipping
+2026-05-21 22:03:33 | WARNING  | src.condition_normaliser | Cluster 4 has no rows in this split — skipping
+2026-05-21 22:03:33 | WARNING  | src.condition_normaliser | Cluster 5 has no rows in this split — skipping
+2026-05-21 22:03:33 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 16596 rows assigned across 1 clusters
+2026-05-21 22:03:34 | INFO     | src.feature_engineering | FeatureEngineer.transform: 16596 rows, 128 features (14 sensors + 112 rolling + 2 extra)
+2026-05-21 22:03:34 | INFO     | __main__ | FD003 test: n=100, coverage=0.9100
+2026-05-21 22:03:34 | INFO     | src.evaluation | FD003 | RMSE=14.4791  MAE=10.1983  CMAPSS_score=516.85  n=100
+2026-05-21 22:03:34 | WARNING  | src.condition_normaliser | Cluster 0 has no rows in this split — skipping
+2026-05-21 22:03:34 | WARNING  | src.condition_normaliser | Cluster 1 has no rows in this split — skipping
+2026-05-21 22:03:34 | WARNING  | src.condition_normaliser | Cluster 3 has no rows in this split — skipping
+2026-05-21 22:03:34 | WARNING  | src.condition_normaliser | Cluster 4 has no rows in this split — skipping
+2026-05-21 22:03:34 | WARNING  | src.condition_normaliser | Cluster 5 has no rows in this split — skipping
+2026-05-21 22:03:34 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 16596 rows assigned across 1 clusters
+2026-05-21 22:03:36 | INFO     | src.feature_engineering | FeatureEngineer.transform: 16596 rows, 128 features (14 sensors + 112 rolling + 2 extra)
+2026-05-21 22:03:36 | INFO     | src.visualisation | RUL prediction plot saved to results/evaluation/rul_predictions_fd003.png
+2026-05-21 22:03:37 | INFO     | src.data | Loaded FD004: train=61249 rows/249 units, test=41214 rows/248 units
+2026-05-21 22:03:37 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 41214 rows assigned across 6 clusters
+2026-05-21 22:03:40 | INFO     | src.feature_engineering | FeatureEngineer.transform: 41214 rows, 128 features (14 sensors + 112 rolling + 2 extra)
+2026-05-21 22:03:40 | INFO     | __main__ | FD004 test: n=248, coverage=0.8952
+2026-05-21 22:03:40 | INFO     | src.evaluation | FD004 | RMSE=15.3006  MAE=11.0219  CMAPSS_score=1059.29  n=248
+2026-05-21 22:03:40 | INFO     | src.condition_normaliser | ConditionNormaliser.transform: 41214 rows assigned across 6 clusters
+2026-05-21 22:03:43 | INFO     | src.feature_engineering | FeatureEngineer.transform: 41214 rows, 128 features (14 sensors + 112 rolling + 2 extra)
+2026-05-21 22:03:44 | INFO     | src.visualisation | RUL prediction plot saved to results/evaluation/rul_predictions_fd004.png
+2026-05-21 22:03:44 | INFO     | src.evaluation | Metrics table saved to results/evaluation/metrics_summary.csv
+dataset      rmse       mae  cmapss_score
+  FD001 14.412333 10.458418    340.419449
+  FD002 14.171444 10.532507    816.181296
+  FD003 14.479050 10.198259    516.854856
+  FD004 15.300551 11.021880   1059.286977
+2026-05-21 22:03:44 | INFO     | src.evaluation | RMSE improvement vs naive mean: 64.0% (naive=40.07, model=14.41)
+2026-05-21 22:03:44 | INFO     | src.evaluation | RMSE improvement vs naive mean: 67.0% (naive=42.94, model=14.17)
+2026-05-21 22:03:44 | INFO     | src.evaluation | RMSE improvement vs naive mean: 63.0% (naive=39.17, model=14.48)
+2026-05-21 22:03:44 | INFO     | src.evaluation | RMSE improvement vs naive mean: 64.4% (naive=42.98, model=15.30)
+2026-05-21 22:03:44 | INFO     | src.evaluation | RMSE improvement vs naive mean: 65.2% (naive=42.09, model=14.65)
+2026-05-21 22:03:44 | INFO     | src.evaluation | Full-trajectory lead-time (threshold=30): TP=159 FP=110 FN=0 TN=438 | recall=100.0% precision=59.1% | mean_lead=60.6 cycles median_lead=56.0 cycles
+2026-05-21 22:03:44 | INFO     | __main__ | Per-unit lead-time saved to results/evaluation/lead_time_per_unit.csv
+2026-05-21 22:03:44 | INFO     | src.evaluation | Cost savings (at-risk fleet of 159 engines): baseline=$15900000  model=$5380000  net_savings=$10520000 (66.2%)
+  Gross savings from TP: $12720000 | False alarm cost (FP): $2200000
+2026-05-21 22:03:44 | INFO     | __main__ | Business metrics saved to results/evaluation/business_metrics.csv
+2026-05-21 22:03:44 | INFO     | src.visualisation | Lead-time distribution plot saved to results/evaluation/lead_time_distribution.png
+2026-05-21 22:03:45 | INFO     | src.visualisation | Business summary plot saved to results/evaluation/business_summary.png
+2026-05-21 22:03:45 | INFO     | src.visualisation | Feature importance plot saved to results/evaluation/feature_importance.png
+2026-05-21 22:03:45 | INFO     | __main__ | Phase 6 evaluation complete. Results in results/evaluation/

@@ -1,0 +1,2 @@
+naive_rmse,model_rmse,improvement_pct,threshold_cycles,n_units,tp,fp,fn,tn,n_near_failure,n_healthy,recall_pct,precision_pct,specificity_pct,f1,n_detected,n_missed,mean_lead_time_cycles,median_lead_time_cycles,min_lead_time_cycles,cost_unplanned,cost_planned,baseline_cost,model_cost,gross_savings,false_alarm_cost,net_savings,savings_pct
+42.09,14.65,65.2,30,707,159,110,0,438,159,548,100.0,59.1,79.9,0.743,269,438,60.6,56.0,26.0,100000.0,20000.0,15900000.0,5380000.0,12720000.0,2200000.0,10520000.0,66.2
