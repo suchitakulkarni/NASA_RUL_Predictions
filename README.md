@@ -68,9 +68,7 @@ The following hyperparameters were optimised by Optuna study
 
   
   | `Parameter`|`Range`|`Scale`|`What it controls`|
-
-  |---|---|---|
-
+  |---|---|---|---|
   | `n_estimators`     | `[50, 500]`   | `linear` | `Number of trees`                         |
   | `max_depth`        | `[3, 10]`     | `linear` | `Max tree depth — complexity/overfitting` |
   | `learning_rate`    | `[0.01, 0.3]` | `log`    | `Shrinkage per tree`                      |
