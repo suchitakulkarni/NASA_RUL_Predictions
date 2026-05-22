@@ -170,7 +170,7 @@ via `--lead-time`, `--cost-unplanned`, and `--cost-planned` CLI flags.
 The results at the top were derived using feature engineering, trained on combination of all four datasets. 
 
 <details>
-## How to Run
+<summary><strong>How to Run</strong></summary>
 
 ```bash
 # 1. Install dependencies
