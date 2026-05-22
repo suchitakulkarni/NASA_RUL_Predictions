@@ -68,7 +68,9 @@ The following hyperparameters were optimised by Optuna study
 
   
   |    Parameter     |    Range    | Scale  |            What it controls             |
+
   |---|---|---|
+
   | n_estimators     | [50, 500]   | linear | Number of trees                         |
   | max_depth        | [3, 10]     | linear | Max tree depth — complexity/overfitting |
   | learning_rate    | [0.01, 0.3] | log    | Shrinkage per tree                      |
@@ -76,6 +78,7 @@ The following hyperparameters were optimised by Optuna study
   | colsample_bytree | [0.5, 1.0]  | linear | Feature fraction sampled per tree       |
   | reg_alpha        | [1e-6, 10]  | log    | L1 regularisation (sparsity)            |
   | reg_lambda       | [1e-6, 10]  | log    | L2 regularisation (weight shrinkage)    |
+
 Parameters not optimised
   - early_stopping_rounds (fixed at 50) — it terminates each trial's training early but is itself not searched
   - loss_alpha (0.7) — a design decision, not a hyperparameter
