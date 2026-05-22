@@ -1,6 +1,6 @@
 # NASA Turbofan Engine Remaining Useful Life (RUL) Prediction
 
-We show that our model saves more than 50% maintainance costs for Turbofan maintainance. 
+We show that our model saves more than 50% maintenance costs for Turbofan maintenance. 
 ![Predicted vs Actual RUL](results/evaluation/business_summary.png) 
 
 ![Lead time per unit](results/evaluation/lead_time_distribution.png)
@@ -26,7 +26,9 @@ Each engine is described by 3 operational settings and 21 sensor readings per cy
 
 ## Methodology
 
-### Feature pipelines
+<details>
+<summary><strong>Feature pipelines</strong></summary>
+
 
 Two feature pipelines are implemented and compared:
 
@@ -47,7 +49,12 @@ Two feature pipelines are implemented and compared:
   rise as an engine ages
 - `dataset_id` appended in joint mode only
 
-### Training modes
+
+</details>
+
+<details>
+<summary><strong>Training modes</strong></summary>
+
 
 | `--mode` | `--features` | Description |
 |---|---|---|
@@ -56,14 +63,24 @@ Two feature pipelines are implemented and compared:
 | `separate` | `engineered` | one model per dataset with engineered features |
 | `separate` | `raw` | one model per dataset with raw sensor values |
 
-### Model
+
+</details>
+
+<details>
+<summary><strong>Model</strong></summary>
+
 
 XGBoost regressor with hyperparameters tuned via Optuna (minimising RMSE on a 20% unit-stratified
 holdout — split is done at the unit level so no unit's time steps appear in both train and val).
 Final model is re-trained on the full training set using the best found parameters.
 RUL targets are capped at 125 cycles (piecewise-linear target).
 
-### Optuna optimisation
+
+</details>
+
+<details>
+<summary><strong>Optuna optimisation</strong></summary>
+
 The following hyperparameters were optimised by Optuna study
 
   
@@ -84,12 +101,42 @@ Parameters not optimised
   - `n_clusters` (6) — domain knowledge, not tuned
   - `Monotone` constraint on `cycle_norm` — structural, always on
 
-### Uncertainty quantification
+
+</details>
+
+<details>
+<summary><strong>Uncertainty quantification</strong></summary>
+
 
 Conformal prediction intervals (90% nominal coverage) are calibrated using split conformal
 with cluster-stratified nonconformity quantiles. Calibration units are held out from the
 temporary model used to compute nonconformity scores, ensuring valid marginal coverage
 guarantees on unseen test units.
+
+
+</details>
+
+### Business cost model
+
+The model is evaluated against a reactive baseline (wait-for-failure, no predictive system).
+An alarm fires when the predicted RUL drops below a **30-cycle lead-time threshold**.
+Each engine in the test set is classified into one of four outcomes:
+
+| Outcome | Description | Cost |
+|---|---|---|
+| TP — correct alarm | Near-failure engine correctly flagged | $20,000 (planned maintenance) |
+| FP — false alarm | Healthy engine unnecessarily flagged | $20,000 (wasted planned maintenance) |
+| FN — missed failure | Near-failure engine not flagged | $100,000 (unplanned failure) |
+| TN — correctly quiet | Healthy engine, no alarm | $0 |
+
+**Baseline**: every near-failure engine fails unplanned → each costs $100,000.
+
+**Net savings** = TP × ($100,000 − $20,000) − FP × $20,000
+
+The 5× cost ratio between unplanned and planned maintenance reflects industry benchmarks
+for turbofan overhaul (unplanned AOG events include airframe downtime, expedited parts, and
+labour premiums on top of the repair itself). The threshold and cost figures are configurable
+via `--lead-time`, `--cost-unplanned`, and `--cost-planned` CLI flags.
 
 ## Results
 
