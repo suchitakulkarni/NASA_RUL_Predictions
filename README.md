@@ -169,6 +169,7 @@ via `--lead-time`, `--cost-unplanned`, and `--cost-planned` CLI flags.
 
 The results at the top were derived using feature engineering, trained on combination of all four datasets. 
 
+<details>
 ## How to Run
 
 ```bash
@@ -244,6 +245,7 @@ python run_evaluation.py --features engineered --run-tag exp_w20
 ```bash
 python train.py --mode joint --features engineered --trials 50 --cap 100 --window 5 10
 ```
+</details>
 
 ## Project Structure
 
