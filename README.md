@@ -169,7 +169,7 @@ via `--lead-time`, `--cost-unplanned`, and `--cost-planned` CLI flags.
 
 The results at the top were derived using feature engineering, trained on combination of all four datasets. 
 
-##How to Run
+## How to Run
 
 <details>
 <summary><strong>Installation</strong></summary>
