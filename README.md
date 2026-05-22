@@ -182,8 +182,10 @@ pip install -r requirements.txt
 All hyperparameters and constants live in `configs/default.yaml`. The CLI flags
 `--cap`, `--trials`, and `--window` override the config for quick experiments
 without editing the file.
+</details>
 
-### Joint model pipeline (recommended)
+<details>
+<summary><strong>Joint model pipeline (recommended)</strong></summary>
 
 ```bash
 # 2. Train — one model on all four datasets
@@ -198,8 +200,10 @@ python calibrate.py --features raw
 python run_evaluation.py --features engineered
 python run_evaluation.py --features raw
 ```
+</details>
 
-### Separate model pipeline
+<details>
+<summary><strong>Separate model pipeline</strong></summary>
 
 ```bash
 # 2. Train — one model per dataset
@@ -210,8 +214,10 @@ python train.py --mode separate --features raw
 python combined_pred.py --features engineered
 python combined_pred.py --features raw
 ```
+</details>
 
-### Artifact naming
+<details>
+<summary><strong>Artifact naming</strong></summary>
 
 Every run saves its artifacts under `results/models/` using an `artifact_tag` that defaults
 to `{mode}_{features}` (e.g. `joint_engineered`). The full naming scheme:
@@ -223,8 +229,10 @@ to `{mode}_{features}` (e.g. `joint_engineered`). The full naming scheme:
 | Condition normaliser | `condition_normaliser_joint_engineered.pkl` |
 | Conformal predictor | `conformal_predictor_joint_engineered.pkl` |
 | Separate model | `separate_engineered_FD001.pkl` |
+</details>
 
-### Running experiments in parallel
+<details>
+<summary><strong>Running experiments in parallel</strong></summary>
 
 Use `--run-tag` to namespace artifacts and `--n-jobs 1` to avoid CPU oversubscription:
 
@@ -241,8 +249,10 @@ python run_evaluation.py --features engineered --run-tag exp_w10
 python calibrate.py      --features engineered --run-tag exp_w20
 python run_evaluation.py --features engineered --run-tag exp_w20
 ```
+</details>
 
-### Overriding config values from the command line
+<details>
+<summary><strong>Overriding config values from the command line</strong></summary>
 
 ```bash
 python train.py --mode joint --features engineered --trials 50 --cap 100 --window 5 10
