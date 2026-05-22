@@ -1,6 +1,6 @@
 # NASA Turbofan Engine Remaining Useful Life (RUL) Prediction
 
-We show that our model saves more than 50% maintenance costs for Turbofan maintenance. 
+Under the simulated maintenance policy described below, the engineered joint model reduces maintenance cost by more than 50% relative to reactive maintenance.
 ![Predicted vs Actual RUL](results/evaluation/business_summary.png) 
 
 ![Lead time per unit](results/evaluation/lead_time_distribution.png)

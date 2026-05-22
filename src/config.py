@@ -52,6 +52,7 @@ class ModelConfig:
     early_stopping_rounds: int = 50
     pruner_startup_trials: int = 10
     pruner_warmup_steps: int = 20
+    loss_alpha: float = 0.0  # >0 enables asymmetric MAE: alpha penalises over-prediction, 0 uses RMSE
     search_space: SearchSpaceConfig = field(default_factory=SearchSpaceConfig)
 
 

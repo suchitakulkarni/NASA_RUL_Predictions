@@ -22,6 +22,7 @@ model:
   early_stopping_rounds: 50   # stop a trial's trees if val doesn't improve for N rounds
   pruner_startup_trials: 10   # run at least this many trials before pruning kicks in
   pruner_warmup_steps: 20     # ignore the first N boosting rounds before pruning
+  loss_alpha: 0.7             # asymmetric MAE: 0.7 penalises over-prediction 2.3x more than under; 0 = disabled (RMSE)
   search_space:
     n_estimators: [50, 500]
     max_depth: [3, 10]
